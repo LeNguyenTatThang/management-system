@@ -1,0 +1,39 @@
+export const kpis = {
+  revenue: { value: '25.840.000đ', change: '+12.5%', label: 'Compared with yesterday', isPositive: true },
+  orders: { value: 186, change: '+8.2%', label: 'Compared with yesterday', isPositive: true },
+  profit: { value: '8.420.000đ', change: '32.6%', label: 'Profit margin', isPositive: true },
+  bestSeller: { value: 'Cà phê sữa', subValue: '128 ly', label: 'Top product' },
+  lowStock: { value: 8, label: 'Cần nhập thêm' },
+  processing: { value: 12, label: 'Currently processing' },
+};
+
+export const revenueData = [
+  { name: 'T2', revenue: 12000000, orders: 85 },
+  { name: 'T3', revenue: 15000000, orders: 95 },
+  { name: 'T4', revenue: 18000000, orders: 120 },
+  { name: 'T5', revenue: 14000000, orders: 90 },
+  { name: 'T6', revenue: 22000000, orders: 150 },
+  { name: 'T7', revenue: 28000000, orders: 190 },
+  { name: 'CN', revenue: 25840000, orders: 186 },
+];
+
+export const bestSellers = [
+  { id: 1, name: 'Cà phê sữa', quantity: 128, revenue: '3.200.000đ', ratio: '25%' },
+  { id: 2, name: 'Bạc xỉu', quantity: 95, revenue: '2.850.000đ', ratio: '18%' },
+  { id: 3, name: 'Trà đào', quantity: 82, revenue: '2.460.000đ', ratio: '15%' },
+  { id: 4, name: 'Matcha latte', quantity: 64, revenue: '2.560.000đ', ratio: '12%' },
+  { id: 5, name: 'Cà phê đen', quantity: 50, revenue: '1.000.000đ', ratio: '10%' },
+];
+
+export const inventoryWarnings = [
+  { id: 1, name: 'Sữa đặc', stock: '2 hộp', status: 'Sắp hết' },
+  { id: 2, name: 'Cà phê Robusta', stock: '1.2kg', status: 'Sắp hết' },
+  { id: 3, name: 'Syrup đào', stock: '300ml', status: 'Sắp hết' },
+];
+
+export const products = [
+  { id: 'CF001', name: 'Cà phê sữa', category: 'Cà phê', price: 25000, cost: 7640, profit: 17360, status: 'Đang bán', updatedAt: '22/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Khẩu', 'Ống hút ngắn', 'Thìa ngắn'], size: '360ml', fc: '30.6%' },
+  { id: 'CF002', name: 'Bạc xỉu', category: 'Cà phê', price: 30000, cost: 8500, profit: 21500, status: 'Đang bán', updatedAt: '21/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Khẩu', 'Ống hút'], size: '360ml', fc: '28.3%' },
+  { id: 'TR001', name: 'Trà đào cam sả', category: 'Trà', price: 40000, cost: 12000, profit: 28000, status: 'Đang bán', updatedAt: '20/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Ống hút to'], size: '500ml', fc: '30.0%' },
+  { id: 'TS001', name: 'Trà sữa trân châu', category: 'Trà sữa', price: 35000, cost: 10500, profit: 24500, status: 'Tạm ngưng', updatedAt: '19/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Ống hút to', 'Trân châu'], size: '500ml', fc: '30.0%' },
+];
