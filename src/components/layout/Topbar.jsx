@@ -14,7 +14,7 @@ const getTitle = (pathname) => {
   return 'Dez Lab';
 };
 
-export default function Topbar() {
+export default function Topbar({ onToggleMenu }) {
   const { user } = useAuth();
   const location = useLocation();
   const title = getTitle(location.pathname);
@@ -22,7 +22,7 @@ export default function Topbar() {
   return (
     <div className="topbar min-w-0 flex items-center justify-between px-4 md:px-6 w-full">
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <button className="md:hidden text-muted p-1"><Menu size={24} /></button>
+        <button className="md:hidden text-muted p-1" onClick={onToggleMenu}><Menu size={24} /></button>
         <div className="min-w-0 truncate">
           <h1 className="text-lg md:text-xl font-bold truncate">{title}</h1>
           <div className="text-xs md:text-sm text-muted truncate hidden md:block">Dashboard / {title}</div>

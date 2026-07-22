@@ -132,7 +132,7 @@ export default function MenuProducts() {
                 </div>
               </div>
               <input type="text" placeholder="Tên món *" className="w-full modal-input" value={form.name} onChange={handleChange('name')} />
-              <div className="flex gap-3 min-w-0">
+              <div className="flex flex-col sm:flex-row gap-3 min-w-0">
                 <select className="flex-1 modal-input" value={form.category} onChange={handleChange('category')}>
                   <option>Cà phê</option>
                   <option>Trà</option>

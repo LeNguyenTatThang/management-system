@@ -242,13 +242,13 @@ export default function Recipes() {
 
               <div className="flex flex-col gap-3 min-w-0 max-h-300px overflow-y-auto">
                 {form.ingredients.map((ing, idx) => (
-                  <div key={idx} className="flex items-center gap-2 min-w-0">
+                  <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
                     <select className="flex-1 min-w-0 h-40px" value={ing.ingredientId} onChange={handleIngredientChange(idx, 'ingredientId')}>
                       <option value="">-- Chọn NL --</option>
                       {ingredients.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
                     </select>
-                    <input type="number" placeholder="SL" className="w-20 h-40px" value={ing.amount} onChange={handleIngredientChange(idx, 'amount')} />
-                    <button className="p-1.5 text-muted hover-text-danger cursor-pointer flex-shrink-0" onClick={() => removeIngredientRow(idx)}><X size={16} /></button>
+                    <input type="number" placeholder="SL" className="w-full sm:w-20 h-40px" value={ing.amount} onChange={handleIngredientChange(idx, 'amount')} />
+                    <button className="p-1.5 text-muted hover-text-danger cursor-pointer flex-shrink-0 self-end sm:self-auto" onClick={() => removeIngredientRow(idx)}><X size={16} /></button>
                   </div>
                 ))}
               </div>

@@ -144,8 +144,8 @@ export default function Ingredients() {
             </div>
             <div className="flex flex-col gap-4">
               <input type="text" placeholder="Tên nguyên liệu *" className="w-full modal-input" value={form.name} onChange={handleChange('name')} />
-              <div className="flex gap-3 min-w-0">
-                <select className="w-24 modal-input" value={form.unit} onChange={handleChange('unit')}>
+              <div className="flex flex-col sm:flex-row gap-3 min-w-0">
+                <select className="w-full sm:w-24 modal-input" value={form.unit} onChange={handleChange('unit')}>
                   <option>Kg</option>
                   <option>Gr</option>
                   <option>Lít</option>
@@ -157,7 +157,7 @@ export default function Ingredients() {
                 </select>
                 <input type="number" placeholder="Tồn kho ban đầu" className="flex-1 modal-input" value={form.stock} onChange={handleChange('stock')} />
               </div>
-              <div className="flex gap-3 min-w-0">
+              <div className="flex flex-col sm:flex-row gap-3 min-w-0">
                 <input type="number" placeholder="Tồn tối thiểu" className="flex-1 modal-input" value={form.minStock} onChange={handleChange('minStock')} />
                 <input type="number" placeholder="Đơn giá" className="flex-1 modal-input" value={form.cost} onChange={handleChange('cost')} />
               </div>
