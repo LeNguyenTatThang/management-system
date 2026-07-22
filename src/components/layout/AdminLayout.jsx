@@ -11,7 +11,7 @@ export default function AdminLayout() {
       {!isPOS && <Sidebar />}
       <div className="flex-1 min-w-0 w-full flex flex-col h-full overflow-hidden">
         {!isPOS && <Topbar />}
-        <main className="w-full min-w-0 flex-1 overflow-y-auto" style={{ padding: isPOS ? '0' : 'var(--spacing-6)' }}>
+        <main className={`w-full min-w-0 flex-1 overflow-y-auto ${isPOS ? 'p-0' : 'p-6'}`}>
           <Outlet />
         </main>
       </div>

@@ -32,8 +32,8 @@ export const inventoryWarnings = [
 ];
 
 export const products = [
-  { id: 'CF001', name: 'Cà phê sữa', category: 'Cà phê', price: 25000, cost: 7640, profit: 17360, status: 'Đang bán', updatedAt: '22/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Khẩu', 'Ống hút ngắn', 'Thìa ngắn'], size: '360ml', fc: '30.6%' },
-  { id: 'CF002', name: 'Bạc xỉu', category: 'Cà phê', price: 30000, cost: 8500, profit: 21500, status: 'Đang bán', updatedAt: '21/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Khẩu', 'Ống hút'], size: '360ml', fc: '28.3%' },
-  { id: 'TR001', name: 'Trà đào cam sả', category: 'Trà', price: 40000, cost: 12000, profit: 28000, status: 'Đang bán', updatedAt: '20/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Ống hút to'], size: '500ml', fc: '30.0%' },
-  { id: 'TS001', name: 'Trà sữa trân châu', category: 'Trà sữa', price: 35000, cost: 10500, profit: 24500, status: 'Tạm ngưng', updatedAt: '19/07/2026', image: 'https://coffee.alexflipnote.dev/mVFwmY5TeOE_coffee.png', tags: ['Ống hút to', 'Trân châu'], size: '500ml', fc: '30.0%' },
+  { id: 'CF001', name: 'Cà phê sữa', category: 'Cà phê', price: 25000, cost: 7640, profit: 17360, status: 'Đang bán', updatedAt: '22/07/2026', image: 'https://coffee.alexflipnote.dev/random?1', tags: ['Khẩu', 'Ống hút ngắn', 'Thìa ngắn'], size: '360ml', fc: '30.6%' },
+  { id: 'CF002', name: 'Bạc xỉu', category: 'Cà phê', price: 30000, cost: 8500, profit: 21500, status: 'Đang bán', updatedAt: '21/07/2026', image: 'https://coffee.alexflipnote.dev/random?2', tags: ['Khẩu', 'Ống hút'], size: '360ml', fc: '28.3%' },
+  { id: 'TR001', name: 'Trà đào cam sả', category: 'Trà', price: 40000, cost: 12000, profit: 28000, status: 'Đang bán', updatedAt: '20/07/2026', image: 'https://coffee.alexflipnote.dev/random?3', tags: ['Ống hút to'], size: '500ml', fc: '30.0%' },
+  { id: 'TS001', name: 'Trà sữa trân châu', category: 'Trà sữa', price: 35000, cost: 10500, profit: 24500, status: 'Tạm ngưng', updatedAt: '19/07/2026', image: 'https://coffee.alexflipnote.dev/random?4', tags: ['Ống hút to', 'Trân châu'], size: '500ml', fc: '30.0%' },
 ];

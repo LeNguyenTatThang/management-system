@@ -1,130 +1,160 @@
 import { useState } from 'react';
-import { Search, Plus, LayoutGrid, List as ListIcon, Edit, Eye, Trash2 } from 'lucide-react';
-import { products } from '../data/mockData';
+import { useMenuProduct } from '../contexts/MenuProductContext';
+import { Coffee, Plus, Edit3, Trash2, Search } from 'lucide-react';
 import PageContainer from '../components/layout/PageContainer';
 import ResponsiveTable from '../components/ui/ResponsiveTable';
 
+const defaultForm = {
+  name: '', category: 'Cà phê', price: '', image: '', description: '', status: 'Đang bán'
+};
+
 export default function MenuProducts() {
-  const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
+  const { products, addProduct, updateProduct, deleteProduct } = useMenuProduct();
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState(defaultForm);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleChange = key => e => setForm(p => ({ ...p, [key]: e.target.value }));
+
+  const openAdd = () => {
+    setEditItem(null);
+    setForm(defaultForm);
+    setShowModal(true);
+  };
+
+  const openEdit = (item) => {
+    setEditItem(item);
+    setForm({ name: item.name, category: item.category, price: String(item.price), image: item.image, description: item.description, status: item.status });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name || !form.price) return;
+    const payload = { ...form, price: Number(form.price) };
+    if (editItem) {
+      await updateProduct(editItem.id, payload);
+    } else {
+      await addProduct(payload);
+    }
+    setShowModal(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Xóa món này?')) await deleteProduct(id);
+  };
+
+  const previewImage = form.image || 'https://via.placeholder.com/80?text=No+Image';
 
   return (
     <PageContainer>
       <div className="flex flex-col gap-6 w-full min-w-0">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-lg shadow-sm border border-[rgba(0,0,0,0.05)] gap-4" style={{ borderColor: 'var(--border-color)' }}>
-          <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-            <div style={{ position: 'relative' }} className="w-full sm:w-auto">
-              <Search size={18} className="text-muted" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input type="text" placeholder="Tìm kiếm món..." className="w-full sm:w-[250px]" style={{ paddingLeft: '40px', height: '40px' }} />
-            </div>
-            <select style={{ height: '40px' }}>
-              <option>Tất cả danh mục</option>
-              <option>Cà phê</option>
-              <option>Trà</option>
-            </select>
-            <select style={{ height: '40px' }} className="flex-1 sm:flex-none">
-              <option>Đang bán</option>
-              <option>Tạm ngưng</option>
-            </select>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-w-0">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold truncate">Danh mục món</h2>
+            <p className="text-muted text-sm truncate">Quản lý {products.length} món</p>
           </div>
-          <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-            <div className="flex items-center p-1" style={{ backgroundColor: '#f3f4f6', borderRadius: 'var(--radius-md)' }}>
-              <button
-                className="flex items-center justify-center"
-                style={{ padding: '8px', borderRadius: '4px', backgroundColor: viewMode === 'card' ? 'white' : 'transparent', color: viewMode === 'card' ? 'var(--primary)' : 'var(--text-muted)', boxShadow: viewMode === 'card' ? 'var(--shadow-sm)' : 'none' }}
-                onClick={() => setViewMode('card')}
-              >
-                <LayoutGrid size={18} />
-              </button>
-              <button
-                className="flex items-center justify-center"
-                style={{ padding: '8px', borderRadius: '4px', backgroundColor: viewMode === 'list' ? 'white' : 'transparent', color: viewMode === 'list' ? 'var(--primary)' : 'var(--text-muted)', boxShadow: viewMode === 'list' ? 'var(--shadow-sm)' : 'none' }}
-                onClick={() => setViewMode('list')}
-              >
-                <ListIcon size={18} />
-              </button>
+          <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-center h-40px" onClick={openAdd}>
+            <Plus size={18} /> Thêm món mới
+          </button>
+        </div>
+
+        <div className="card p-0 overflow-hidden min-w-0">
+          <div className="p-4 border-b min-w-0">
+            <div className="relative w-full sm:w-80">
+              <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
+              <input type="text" placeholder="Tìm kiếm món..." className="w-full pl-10 h-36px"
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
-            <button className="btn btn-primary" style={{ height: '40px' }}>
-              <Plus size={18} /> Thêm món mới
-            </button>
           </div>
+          <ResponsiveTable>
+            <thead>
+              <tr>
+                <th>Món</th>
+                <th>Danh mục</th>
+                <th>Giá bán</th>
+                <th>Trạng thái</th>
+                <th className="text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(item => (
+                <tr key={item.id}>
+                  <td>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-bg overflow-hidden">
+                        {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted"><Coffee size={20} /></div>}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-sm truncate">{item.name}</div>
+                        {item.description && <div className="text-xs text-muted truncate">{item.description}</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td><span className="text-sm text-muted">{item.category}</span></td>
+                  <td className="font-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}</td>
+                  <td><span className={`badge ${item.status === 'Đang bán' ? 'badge-success' : 'badge-danger'}`}>{item.status}</span></td>
+                  <td className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button className="p-1.5 text-muted hover-text-primary cursor-pointer" onClick={() => openEdit(item)}><Edit3 size={16} /></button>
+                      <button className="p-1.5 text-muted hover-text-danger cursor-pointer" onClick={() => handleDelete(item.id)}><Trash2 size={16} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={5} className="text-center text-muted py-8">{searchTerm ? 'Không tìm thấy món nào' : 'Chưa có món nào. Hãy thêm món mới!'}</td></tr>
+              )}
+            </tbody>
+          </ResponsiveTable>
         </div>
       </div>
-      {viewMode === 'card' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full min-w-0">
-          {products.map(p => (
-            <div key={p.id} className="card flex flex-col" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ height: 180, backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--border-color)' }}>
-                <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4">
+          <div className="card animate-fade-slide-in w-full max-w-520px max-h-90vh">
+            <div className="flex justify-between items-center mb-6 gap-4">
+              <h3 className="font-bold text-lg truncate">{editItem ? 'Sửa món' : 'Thêm món mới'}</h3>
+              <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={() => setShowModal(false)}>×</button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-bg overflow-hidden">
+                  <img src={previewImage} alt="preview" className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label className="text-sm font-semibold mb-1 block">URL hình ảnh</label>
+                  <input type="url" placeholder="https://..." className="w-full h-40px" value={form.image} onChange={handleChange('image')} />
+                </div>
               </div>
-              <div className="flex flex-col flex-1" style={{ padding: 'var(--spacing-4)' }}>
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-bold text-lg">{p.name}</h3>
-                    <div className="text-sm text-muted">{p.category}</div>
-                  </div>
-                  <span className={`badge ${p.status === 'Đang bán' ? 'badge-success' : 'badge-neutral'}`}>{p.status}</span>
-                </div>
-                <div className="text-xl font-bold text-primary mb-4">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price)}
-                </div>
-                <div className="mt-auto space-y-2 text-sm pt-3" style={{ borderTop: '1px solid var(--border-soft)' }}>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-muted">Giá vốn:</span>
-                    <span className="font-medium">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.cost)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted">Lợi nhuận:</span>
-                    <span className="font-medium" style={{ color: 'var(--success)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.profit)}</span>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <button className="btn btn-outline flex-1">Chi tiết</button>
-                  <button className="btn btn-primary" style={{ padding: '8px' }}><Edit size={16} /></button>
-                </div>
+              <input type="text" placeholder="Tên món *" className="w-full modal-input" value={form.name} onChange={handleChange('name')} />
+              <div className="flex gap-3 min-w-0">
+                <select className="flex-1 modal-input" value={form.category} onChange={handleChange('category')}>
+                  <option>Cà phê</option>
+                  <option>Trà</option>
+                  <option>Đá xay</option>
+                  <option>Sinh tố</option>
+                  <option>Bánh</option>
+                  <option>Khác</option>
+                </select>
+                <input type="number" placeholder="Giá bán *" className="flex-1 modal-input" value={form.price} onChange={handleChange('price')} />
+              </div>
+              <textarea placeholder="Mô tả (không bắt buộc)" className="w-full" rows={3} value={form.description} onChange={handleChange('description')} />
+              <select className="w-full modal-input" value={form.status} onChange={handleChange('status')}>
+                <option>Đang bán</option>
+                <option>Ngừng bán</option>
+              </select>
+              <div className="flex gap-3 mt-2">
+                <button className="btn flex-1 modal-btn" onClick={() => setShowModal(false)}>Hủy</button>
+                <button className="btn btn-primary flex-1 modal-btn" onClick={handleSave}>{editItem ? 'Cập nhật' : 'Thêm món'}</button>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      ) : (
-        <ResponsiveTable>
-          <thead>
-            <tr>
-              <th>Mã món</th>
-              <th>Tên món</th>
-              <th>Danh mục</th>
-              <th>Giá bán</th>
-              <th>Giá vốn</th>
-              <th>Lợi nhuận</th>
-              <th>Trạng thái</th>
-              <th style={{ textAlign: 'right' }}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map(p => (
-              <tr key={p.id}>
-                <td className="text-muted text-sm">{p.id}</td>
-                <td>
-                  <div className="flex items-center gap-3">
-                    <img src={p.image} alt={p.name} style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }} />
-                    <span className="font-semibold">{p.name}</span>
-                  </div>
-                </td>
-                <td>{p.category}</td>
-                <td className="font-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price)}</td>
-                <td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.cost)}</td>
-                <td style={{ color: 'var(--success)', fontWeight: 500 }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.profit)}</td>
-                <td><span className={`badge ${p.status === 'Đang bán' ? 'badge-success' : 'badge-neutral'}`}>{p.status}</span></td>
-                <td style={{ textAlign: 'right' }}>
-                  <div className="flex items-center justify-end gap-2">
-                    <button style={{ padding: '4px', color: 'var(--text-muted)' }}><Eye size={18} /></button>
-                    <button style={{ padding: '4px', color: 'var(--text-muted)' }}><Edit size={18} /></button>
-                    <button style={{ padding: '4px', color: 'var(--danger)' }}><Trash2 size={18} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </ResponsiveTable>
       )}
     </PageContainer>
   );

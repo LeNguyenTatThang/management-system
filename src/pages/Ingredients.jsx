@@ -1,114 +1,195 @@
-import { Search, Plus, Filter, AlertTriangle, Package, TrendingDown, Archive } from 'lucide-react';
+import { useState } from 'react';
+import { useIngredient } from '../contexts/IngredientContext';
+import { Package, Plus, Edit3, Trash2, Search } from 'lucide-react';
 import PageContainer from '../components/layout/PageContainer';
 import ResponsiveTable from '../components/ui/ResponsiveTable';
 
-const ingredients = [
-  { id: 'NL01', name: 'Cà phê Robusta', group: 'Cà phê', unit: 'Kg', stock: 12.5, minStock: 5, price: 150000, status: 'Đủ hàng' },
-  { id: 'NL02', name: 'Sữa đặc Ngôi Sao', group: 'Sữa', unit: 'Hộp', stock: 2, minStock: 10, price: 22000, status: 'Sắp hết' },
-  { id: 'NL03', name: 'Syrup Đào', group: 'Syrup', unit: 'Chai', stock: 0.5, minStock: 2, price: 180000, status: 'Sắp hết' },
-  { id: 'NL04', name: 'Trà Đen', group: 'Trà', unit: 'Kg', stock: 8, minStock: 3, price: 120000, status: 'Đủ hàng' },
-];
+const defaultForm = {
+  name: '', unit: 'Kg', stock: '', minStock: '', cost: '', supplier: ''
+};
 
 export default function Ingredients() {
+  const { ingredients, addIngredient, updateIngredient, deleteIngredient, addStock } = useIngredient();
+  const [showModal, setShowModal] = useState(false);
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState(defaultForm);
+  const [stockItemId, setStockItemId] = useState(null);
+  const [stockQty, setStockQty] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filtered = ingredients.filter(i =>
+    i.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleChange = key => e => setForm(p => ({ ...p, [key]: e.target.value }));
+
+  const openAdd = () => {
+    setEditItem(null);
+    setForm(defaultForm);
+    setShowModal(true);
+  };
+
+  const openEdit = (item) => {
+    setEditItem(item);
+    setForm({
+      name: item.name, unit: item.unit, stock: String(item.stock),
+      minStock: String(item.minStock), cost: String(item.cost), supplier: item.supplier
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name) return;
+    const payload = { ...form, stock: Number(form.stock), minStock: Number(form.minStock), cost: Number(form.cost) };
+    if (editItem) {
+      await updateIngredient(editItem.id, payload);
+    } else {
+      await addIngredient(payload);
+    }
+    setShowModal(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Xóa nguyên liệu này?')) await deleteIngredient(id);
+  };
+
+  const openStockIn = (id) => {
+    setStockItemId(id);
+    setStockQty('');
+    setShowStockModal(true);
+  };
+
+  const handleStockIn = async () => {
+    if (!stockQty || Number(stockQty) <= 0) return;
+    await addStock(stockItemId, Number(stockQty));
+    setShowStockModal(false);
+  };
+
   return (
     <PageContainer>
       <div className="flex flex-col gap-6 w-full min-w-0">
-
-        {/* Page header */}
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>Nguyên liệu</h1>
-          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Quản lý danh mục nguyên liệu và tồn kho</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-w-0">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold truncate">Nguyên liệu</h2>
+            <p className="text-muted text-sm truncate">Quản lý {ingredients.length} nguyên liệu</p>
+          </div>
+          <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-center h-40px" onClick={openAdd}>
+            <Plus size={18} /> Thêm nguyên liệu
+          </button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full min-w-0">
-          <div className="card flex items-center gap-4">
-            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(108,17,30,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', flexShrink: 0 }}>
-              <Package size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng nguyên liệu</div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--primary)', lineHeight: 1.2 }}>45</div>
+        <div className="card p-0 overflow-hidden min-w-0">
+          <div className="p-4 border-b min-w-0">
+            <div className="relative w-full sm:w-80">
+              <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
+              <input type="text" placeholder="Tìm nguyên liệu..." className="w-full pl-10 h-36px"
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
           </div>
-          <div className="card flex items-center gap-4">
-            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--info)', flexShrink: 0 }}>
-              <Archive size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng giá trị tồn</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--info)', lineHeight: 1.2 }}>12.540.000đ</div>
-            </div>
-          </div>
-          <div className="card flex items-center gap-4">
-            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--warning)', flexShrink: 0 }}>
-              <AlertTriangle size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sắp hết</div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--warning)', lineHeight: 1.2 }}>8</div>
-            </div>
-          </div>
-          <div className="card flex items-center gap-4">
-            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', flexShrink: 0 }}>
-              <TrendingDown size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Hết hàng</div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--danger)', lineHeight: 1.2 }}>2</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Table card */}
-        <div className="card p-0 min-w-0">
-          <div className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3" style={{ borderBottom: '1px solid var(--border-soft)' }}>
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div style={{ position: 'relative' }} className="w-full sm:w-auto">
-                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input type="text" placeholder="Tìm kiếm nguyên liệu..." className="w-full sm:w-[250px]" style={{ paddingLeft: 38, height: 38, borderRadius: 10 }} />
-              </div>
-              <button className="btn btn-outline" style={{ height: 38, borderRadius: 10 }}><Filter size={16} /> Lọc</button>
-            </div>
-            <button className="btn btn-primary w-full md:w-auto" style={{ height: 38, borderRadius: 10 }}>
-              <Plus size={16} /> Nhập kho
-            </button>
-          </div>
-
           <ResponsiveTable>
             <thead>
               <tr>
                 <th>Tên nguyên liệu</th>
-                <th>Nhóm</th>
-                <th>Đơn vị</th>
+                <th>ĐVT</th>
                 <th>Tồn kho</th>
                 <th>Tồn tối thiểu</th>
-                <th>Giá nhập</th>
-                <th>Trạng thái</th>
-                <th style={{ textAlign: 'right' }}>Thao tác</th>
+                <th>Đơn giá</th>
+                <th>Nhà cung cấp</th>
+                <th className="text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {ingredients.map(item => (
-                <tr key={item.id}>
-                  <td style={{ fontWeight: 600 }}>{item.name}</td>
-                  <td>{item.group}</td>
-                  <td>{item.unit}</td>
-                  <td style={{ fontWeight: 700 }}>{item.stock}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{item.minStock}</td>
-                  <td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}</td>
-                  <td>
-                    <span className={`badge ${item.status === 'Đủ hàng' ? 'badge-success' : 'badge-warning'}`}>{item.status}</span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button className="btn btn-ghost" style={{ fontSize: 13, padding: '4px 10px' }}>Chi tiết</button>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map(item => {
+                const isLowStock = item.stock <= item.minStock;
+                return (
+                  <tr key={item.id}>
+                    <td className="font-semibold">{item.name}</td>
+                    <td className="text-sm">{item.unit}</td>
+                    <td>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`font-bold ${isLowStock ? 'text-danger' : ''}`}>{item.stock}</span>
+                        <span className="text-muted text-xs">{item.unit}</span>
+                        {isLowStock && <span className="badge badge-danger text-xs">Sắp hết</span>}
+                      </div>
+                    </td>
+                    <td className="text-sm text-muted">{item.minStock}</td>
+                    <td className="font-bold">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.cost)}</td>
+                    <td className="text-sm">{item.supplier || '—'}</td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button className="text-xs font-semibold px-2 py-1 rounded bg-primary text-white hover-bg-primary cursor-pointer flex-shrink-0 whitespace-nowrap"
+                          onClick={() => openStockIn(item.id)}>Nhập kho</button>
+                        <button className="p-1.5 text-muted hover-text-primary cursor-pointer" onClick={() => openEdit(item)}><Edit3 size={16} /></button>
+                        <button className="p-1.5 text-muted hover-text-danger cursor-pointer" onClick={() => handleDelete(item.id)}><Trash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="text-center text-muted py-8">{searchTerm ? 'Không tìm thấy nguyên liệu' : 'Chưa có nguyên liệu nào'}</td></tr>
+              )}
             </tbody>
           </ResponsiveTable>
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4">
+          <div className="card animate-fade-slide-in w-full max-w-500px">
+            <div className="flex justify-between items-center mb-6 gap-4">
+              <h3 className="font-bold text-lg truncate">{editItem ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}</h3>
+              <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={() => setShowModal(false)}>×</button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <input type="text" placeholder="Tên nguyên liệu *" className="w-full modal-input" value={form.name} onChange={handleChange('name')} />
+              <div className="flex gap-3 min-w-0">
+                <select className="w-24 modal-input" value={form.unit} onChange={handleChange('unit')}>
+                  <option>Kg</option>
+                  <option>Gr</option>
+                  <option>Lít</option>
+                  <option>ml</option>
+                  <option>Cái</option>
+                  <option>Hộp</option>
+                  <option>Bịch</option>
+                  <option>Chai</option>
+                </select>
+                <input type="number" placeholder="Tồn kho ban đầu" className="flex-1 modal-input" value={form.stock} onChange={handleChange('stock')} />
+              </div>
+              <div className="flex gap-3 min-w-0">
+                <input type="number" placeholder="Tồn tối thiểu" className="flex-1 modal-input" value={form.minStock} onChange={handleChange('minStock')} />
+                <input type="number" placeholder="Đơn giá" className="flex-1 modal-input" value={form.cost} onChange={handleChange('cost')} />
+              </div>
+              <input type="text" placeholder="Nhà cung cấp (không bắt buộc)" className="w-full modal-input" value={form.supplier} onChange={handleChange('supplier')} />
+              <div className="flex gap-3 mt-2">
+                <button className="btn flex-1 modal-btn" onClick={() => setShowModal(false)}>Hủy</button>
+                <button className="btn btn-primary flex-1 modal-btn" onClick={handleSave}>{editItem ? 'Cập nhật' : 'Thêm'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showStockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4">
+          <div className="card animate-fade-slide-in w-full max-w-400px">
+            <div className="flex justify-between items-center mb-6 gap-4">
+              <h3 className="font-bold text-lg truncate">Nhập kho</h3>
+              <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={() => setShowStockModal(false)}>×</button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <label className="text-sm font-semibold">Số lượng nhập</label>
+              <input type="number" placeholder="Nhập số lượng..." className="w-full modal-input"
+                value={stockQty} onChange={e => setStockQty(e.target.value)} autoFocus />
+              <div className="flex gap-3 mt-2">
+                <button className="btn flex-1 modal-btn" onClick={() => setShowStockModal(false)}>Hủy</button>
+                <button className="btn btn-primary flex-1 modal-btn" onClick={handleStockIn}>Xác nhận nhập</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }
