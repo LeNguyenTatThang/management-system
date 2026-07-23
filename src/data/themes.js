@@ -1,0 +1,58 @@
+export const themes = [
+  {
+    id: 'burgundy',
+    name: 'Burgundy',
+    description: 'Giao diện đỏ rượu sang trọng',
+    preview: {
+      sidebar: '#ffffff',
+      header: '#ffffff',
+      bg: '#fcf9f2',
+      card: '#ffffff',
+      primary: '#6c111e',
+      text: '#1a1a2e',
+      border: '#e5e7eb',
+    },
+  },
+  {
+    id: 'emerald',
+    name: 'Emerald',
+    description: 'Giao diện xanh lá hiện đại',
+    preview: {
+      sidebar: '#ffffff',
+      header: '#ffffff',
+      bg: '#f0fdf4',
+      card: '#ffffff',
+      primary: '#059669',
+      text: '#1a1a2e',
+      border: '#d1d5db',
+    },
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean',
+    description: 'Giao diện xanh dương tối giản',
+    preview: {
+      sidebar: '#ffffff',
+      header: '#ffffff',
+      bg: '#eff6ff',
+      card: '#ffffff',
+      primary: '#2563eb',
+      text: '#1a1a2e',
+      border: '#d1d5db',
+    },
+  },
+  {
+    id: 'dark',
+    name: 'Dark',
+    description: 'Giao diện tối hiện đại',
+    preview: {
+      sidebar: '#1e293b',
+      header: '#1e293b',
+      bg: '#0f172a',
+      card: '#1e293b',
+      primary: '#818cf8',
+      text: '#f1f5f9',
+      border: '#334155',
+    },
+  },
+];

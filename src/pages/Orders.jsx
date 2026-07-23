@@ -1,4 +1,4 @@
-import { Search, Filter, Eye } from 'lucide-react';
+import { Search, Filter, Eye, Plus } from 'lucide-react';
 import PageContainer from '../components/layout/PageContainer';
 import ResponsiveTable from '../components/ui/ResponsiveTable';
 
@@ -14,29 +14,39 @@ const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency:
 export default function Orders() {
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6 w-full min-w-0">
-        <div className="card p-0 min-w-0">
-          <div className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b min-w-0">
-            <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-              <div className="relative w-full sm:w-auto">
-                <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
-                <input type="text" placeholder="Tìm mã đơn hàng..." className="w-full sm:w-64 pl-10 h-36px" />
-              </div>
-              <select className="h-36px flex-1 sm:flex-none">
-                <option>Hôm nay</option>
-                <option>Hôm qua</option>
-                <option>Tuần này</option>
-              </select>
-              <select className="h-36px flex-1 sm:flex-none">
-                <option>Tất cả trạng thái</option>
-                <option>Đang xử lý</option>
-                <option>Hoàn thành</option>
-                <option>Đã hủy</option>
-              </select>
-            </div>
-            <button className="btn btn-outline w-full md:w-auto h-36px"><Filter size={18} /> Bộ lọc nâng cao</button>
+      <div className="flex flex-col gap-4 w-full min-w-0">
+        <div className="flex flex-row items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold">Đơn hàng</h2>
+            <p className="text-muted text-sm">Quản lý {orders.length} đơn hàng</p>
           </div>
-          
+          <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px">
+            <Plus size={18} /> Thêm đơn hàng
+          </button>
+        </div>
+
+        <div className="card p-3 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 min-w-0">
+              <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
+              <input type="text" placeholder="Tìm mã đơn hàng..." className="w-full pl-10 h-36px" />
+            </div>
+            <select className="h-36px text-sm w-32 flex-shrink-0">
+              <option>Hôm nay</option>
+              <option>Hôm qua</option>
+              <option>Tuần này</option>
+            </select>
+            <select className="h-36px text-sm w-40 flex-shrink-0">
+              <option>Tất cả trạng thái</option>
+              <option>Đang xử lý</option>
+              <option>Hoàn thành</option>
+              <option>Đã hủy</option>
+            </select>
+            <button className="btn btn-outline flex items-center gap-1.5 h-36px text-sm whitespace-nowrap flex-shrink-0"><Filter size={16} /> Bộ lọc</button>
+          </div>
+        </div>
+
+        <div className="card p-0 overflow-hidden min-w-0">
           <ResponsiveTable>
             <thead>
               <tr>

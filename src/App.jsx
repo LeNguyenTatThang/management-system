@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { StaffProvider } from './contexts/StaffContext';
 import { MenuProductProvider } from './contexts/MenuProductContext';
 import { IngredientProvider } from './contexts/IngredientContext';
@@ -71,6 +72,7 @@ function App() {
     <BrowserRouter>
       <Toaster position="top-right" toastOptions={{ duration: 3000, style: { fontFamily: 'var(--font-sans)' } }} />
       <AuthProvider>
+        <ThemeProvider>
         <StaffProvider>
         <MenuProductProvider>
         <IngredientProvider>
@@ -82,6 +84,7 @@ function App() {
         </IngredientProvider>
         </MenuProductProvider>
         </StaffProvider>
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

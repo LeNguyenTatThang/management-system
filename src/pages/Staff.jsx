@@ -30,13 +30,13 @@ export default function Staff() {
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6 w-full min-w-0">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-w-0">
+      <div className="flex flex-col gap-4 w-full min-w-0">
+        <div className="flex flex-row items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-xl font-bold truncate">Quản lý nhân viên</h2>
-            <p className="text-muted text-sm truncate">Có {staffList.length} nhân viên</p>
+            <h2 className="text-xl font-bold">Quản lý nhân viên</h2>
+            <p className="text-muted text-sm">Có {staffList.length} nhân viên</p>
           </div>
-          <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-center h-40px"
+          <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
             onClick={() => setShowModal(true)}>
             <Plus size={18} /> Thêm nhân viên
           </button>

@@ -1,15 +1,20 @@
 :root {
-  --primary: #6c111e; /* Burgundy / Dark Red */
+  --primary: #6c111e;
   --primary-dark: #4a0c14;
   --primary-light: rgba(108, 17, 30, 0.08);
-  --bg-color: #fcf9f2; /* Light warm cream */
+  --bg-color: #fcf9f2;
   --card-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
   --text-primary: #1a1a2e;
   --text-main: #2d2d2d;
   --text-secondary: #4b5563;
   --text-muted: #6b7280;
   --border-color: #e5e7eb;
   --border-soft: rgba(0,0,0,0.05);
+  --input-bg: #ffffff;
+  --table-header-bg: #fafafa;
+  --table-row-hover: rgba(108,17,30,0.02);
 
   --success: #10b981;
   --success-light: #d1fae5;
@@ -82,7 +87,7 @@ input, select {
   outline: none;
   transition: var(--transition);
   color: var(--text-main);
-  background: #fff;
+  background: var(--input-bg);
 }
 input:focus, select:focus {
   border-color: var(--primary);
@@ -127,7 +132,7 @@ input::placeholder {
   background-color: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid var(--border-soft);
   padding: var(--spacing-4);
   width: 100%;
   min-width: 0;
@@ -258,7 +263,7 @@ input::placeholder {
 
 .btn-outline {
   border: 1.5px solid var(--border-color);
-  background-color: white;
+  background-color: var(--card-bg);
   color: var(--text-main);
 }
 .btn-outline:hover { background-color: #f9fafb; border-color: #d1d5db; }
@@ -267,7 +272,7 @@ input::placeholder {
   color: var(--text-muted);
 }
 .btn-ghost:hover {
-  background-color: #f3f4f6;
+  background: #f3f4f6;
   color: var(--text-main);
 }
 
@@ -298,11 +303,11 @@ th {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background-color: #fafafa;
+  background-color: var(--table-header-bg);
 }
 
 tbody tr:hover {
-  background-color: rgba(108,17,30,0.02);
+  background-color: var(--table-row-hover);
 }
 
 /* Layout */
@@ -315,7 +320,7 @@ tbody tr:hover {
 .sidebar {
   width: 240px;
   flex-shrink: 0;
-  background-color: var(--card-bg);
+  background-color: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
   height: 100%;
   overflow: hidden;
@@ -401,7 +406,7 @@ tbody tr:hover {
 
 .topbar {
   height: 64px;
-  background-color: var(--card-bg);
+  background-color: var(--header-bg);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
