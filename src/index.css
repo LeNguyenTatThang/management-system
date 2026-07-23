@@ -1331,6 +1331,16 @@ tbody tr:hover {
   color: var(--primary) !important;
 }
 
+.recipe-card-hover:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.hover-bg-primary-light:hover {
+  background-color: var(--primary-light);
+}
+
 .filter-popover {
   position: absolute;
   right: 0;

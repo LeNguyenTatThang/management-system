@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const getTitle = (pathname) => {
   if (pathname.includes('/dashboard')) return 'Tổng quan';
   if (pathname.includes('/products')) return 'Danh mục món';
-  if (pathname.includes('/recipes')) return 'Danh sách công thức';
+  if (pathname.includes('/recipes')) return 'Công thức thành phần nguyên liệu';
   if (pathname.includes('/ingredients')) return 'Nguyên liệu';
   if (pathname.includes('/orders')) return 'Đơn hàng';
   if (pathname.includes('/staff')) return 'Nhân viên';

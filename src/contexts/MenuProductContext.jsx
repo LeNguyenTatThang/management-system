@@ -3,10 +3,10 @@ import { createContext, useContext, useState, useCallback } from 'react';
 const STORAGE_KEY = 'dezlab_products';
 
 const initialProducts = [
-  { id: 'CF001', name: 'Cà phê sữa', category: 'Cà phê', price: 25000, image: 'https://coffee.alexflipnote.dev/random?1', description: 'Cà phê sữa truyền thống', status: 'Đang bán' },
-  { id: 'CF002', name: 'Bạc xỉu', category: 'Cà phê', price: 30000, image: 'https://coffee.alexflipnote.dev/random?2', description: 'Bạc xỉu Sài Gòn', status: 'Đang bán' },
-  { id: 'TR001', name: 'Trà đào cam sả', category: 'Trà', price: 40000, image: 'https://coffee.alexflipnote.dev/random?3', description: 'Trà đào cam sả tươi mát', status: 'Đang bán' },
-  { id: 'TS001', name: 'Trà sữa trân châu', category: 'Đá xay', price: 35000, image: 'https://coffee.alexflipnote.dev/random?4', description: 'Trà sữa trân châu đường đen', status: 'Đang bán' },
+  { id: 'CF001', name: 'Cà phê sữa', category: 'Cà phê', price: 25000, cost: 7640, profit: 17360, image: 'https://coffee.alexflipnote.dev/random?1', description: 'Cà phê sữa truyền thống', status: 'Đang bán', tags: ['Khay', 'Ống hút ngắn', 'Thìa ngắn'], size: '360ml', fc: '30.6%' },
+  { id: 'CF002', name: 'Bạc xỉu', category: 'Cà phê', price: 30000, cost: 8500, profit: 21500, image: 'https://coffee.alexflipnote.dev/random?2', description: 'Bạc xỉu Sài Gòn', status: 'Đang bán', tags: ['Khay', 'Ống hút'], size: '360ml', fc: '28.3%' },
+  { id: 'TR001', name: 'Trà đào cam sả', category: 'Trà', price: 40000, cost: 12000, profit: 28000, image: 'https://coffee.alexflipnote.dev/random?3', description: 'Trà đào cam sả tươi mát', status: 'Đang bán', tags: ['Ống hút to'], size: '500ml', fc: '30.0%' },
+  { id: 'TS001', name: 'Trà sữa trân châu', category: 'Đá xay', price: 35000, cost: 10500, profit: 24500, image: 'https://coffee.alexflipnote.dev/random?4', description: 'Trà sữa trân châu đường đen', status: 'Ngừng bán', tags: ['Ống hút to', 'Trân châu'], size: '500ml', fc: '30.0%' },
 ];
 
 function loadData() {
@@ -30,6 +30,7 @@ export function MenuProductProvider({ children }) {
     const updated = [...products, newProduct];
     setProducts(updated);
     saveData(updated);
+    return newProduct;
   }, [products]);
 
   const updateProduct = useCallback(async (id, data) => {

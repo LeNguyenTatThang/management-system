@@ -10,7 +10,7 @@ const navGroups = [
     title: 'NHẬP LIỆU',
     items: [
       { name: 'Danh mục nguyên liệu', icon: Package, path: '/ingredients' },
-      { name: 'Công thức / Định lượng', icon: UtensilsCrossed, path: '/recipes' },
+      { name: 'Công thức thành phần NL', icon: UtensilsCrossed, path: '/recipes' },
       { name: 'Danh mục món', icon: Coffee, path: '/products' },
       { name: 'Nhà cung cấp', icon: Store, path: '/suppliers' },
     ]

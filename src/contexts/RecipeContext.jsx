@@ -7,18 +7,30 @@ const initialRecipes = [
     id: 'RC01', productId: 'CF001', productName: 'Cà phê sữa',
     image: 'https://coffee.alexflipnote.dev/random?1',
     note: 'Công thức cà phê sữa truyền thống, phù hợp khẩu vị người Việt.',
+    instructions: [
+      'Chiết xuất 18g cà phê - 36ml',
+      'Cho sữa đặc vào ly khuấy đều',
+      'Cho đá vào ly',
+      'Phục vụ kèm khay và trà đá'
+    ],
     ingredients: [
-      { ingredientId: 'NL01', amount: 0.02 },
-      { ingredientId: 'NL02', amount: 0.5 },
+      { ingredientId: 'NL01', amount: 18, note: 'Rang vừa' },
+      { ingredientId: 'NL02', amount: 20, note: '' },
     ]
   },
   {
     id: 'RC02', productId: 'TR001', productName: 'Trà đào cam sả',
     image: 'https://coffee.alexflipnote.dev/random?3',
     note: 'Trà đào cam sả tươi mát, thích hợp cho mùa hè.',
+    instructions: [
+      'Hãm trà túi lọc với 300ml nước sôi trong 5 phút',
+      'Cắt cam sả lát mỏng',
+      'Pha siro đào vào ly',
+      'Thêm đá và trang trí'
+    ],
     ingredients: [
-      { ingredientId: 'NL05', amount: 1 },
-      { ingredientId: 'NL03', amount: 0.1 },
+      { ingredientId: 'NL05', amount: 1, note: '' },
+      { ingredientId: 'NL03', amount: 10, note: 'Đường kính' },
     ]
   },
 ];

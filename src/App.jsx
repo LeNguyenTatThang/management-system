@@ -9,7 +9,9 @@ import { SupplierProvider } from './contexts/SupplierContext';
 import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import MenuProducts from './pages/MenuProducts';
+import ProductCreate from './pages/ProductCreate';
 import Recipes from './pages/Recipes';
+import RecipeComponentCreate from './pages/RecipeComponentCreate';
 import POS from './pages/POS';
 import Ingredients from './pages/Ingredients';
 import IngredientCreate from './pages/IngredientCreate';
@@ -41,7 +43,9 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<MenuProducts />} />
+        <Route path="products/new" element={<ProductCreate />} />
         <Route path="recipes" element={<Recipes />} />
+        <Route path="recipes/new" element={<RecipeComponentCreate />} />
         <Route path="pos" element={<POS />} />
         <Route path="ingredients" element={<Ingredients />} />
         <Route path="ingredients/create" element={<IngredientCreate />} />
