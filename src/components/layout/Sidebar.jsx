@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Coffee, LayoutDashboard, UtensilsCrossed, 
-  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, UserCog, Shield
+  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, UserCog, Shield, Calendar, ClipboardCheck, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -11,6 +11,8 @@ const navGroups = [
     items: [
       { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
       { name: 'Nhân viên', icon: Users, path: '/staff' },
+      { name: 'Lịch làm việc', icon: Calendar, path: '/schedules' },
+      { name: 'Chấm công', icon: ClipboardCheck, path: '/attendance' },
       { name: 'Tài khoản', icon: UserCog, path: '/accounts' },
       { name: 'Vai trò', icon: Shield, path: '/accounts/roles' },
       { name: 'Theme', icon: Palette, path: '/themes' },
@@ -31,6 +33,8 @@ const navGroups = [
       { name: 'Món', icon: Coffee, path: '/products' },
       { name: 'Công thức', icon: UtensilsCrossed, path: '/recipes' },
       { name: 'Nguyên liệu', icon: Package, path: '/ingredients' },
+      { name: 'Nhập kho', icon: ClipboardList, path: '/inventory/imports' },
+      { name: 'Xuất kho', icon: LogOut, path: '/inventory/exports' },
       { name: 'Nhà cung cấp', icon: Store, path: '/suppliers' },
     ],
   },

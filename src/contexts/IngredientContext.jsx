@@ -73,6 +73,17 @@ export function IngredientProvider({ children }) {
     saveData(STORAGE_KEY, updated);
   }, [ingredients]);
 
+  const subtractStock = useCallback(async (id, qty) => {
+    const updated = ingredients.map(i => {
+      if (i.id !== id) return i;
+      const newStock = i.stock - qty;
+      if (newStock < 0) throw new Error(`Không đủ tồn kho cho ${i.name}. Tồn hiện tại: ${i.stock}${i.unit}`);
+      return { ...i, stock: newStock };
+    });
+    setIngredients(updated);
+    saveData(STORAGE_KEY, updated);
+  }, [ingredients]);
+
   const toggleIngredient = useCallback(async (id) => {
     const updated = ingredients.map(i => i.id === id ? { ...i, active: !i.active } : i);
     setIngredients(updated);
@@ -103,7 +114,7 @@ export function IngredientProvider({ children }) {
 
   return (
     <IngredientContext.Provider value={{
-      ingredients, addIngredient, updateIngredient, deleteIngredient, addStock,
+      ingredients, addIngredient, updateIngredient, deleteIngredient, addStock, subtractStock,
       toggleIngredient, stockExports, addStockExport,
       importHistory, addImportHistory
     }}>

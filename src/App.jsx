@@ -9,6 +9,10 @@ import { RecipeProvider } from './contexts/RecipeContext';
 import { SupplierProvider } from './contexts/SupplierContext';
 import { AccountProvider } from './contexts/AccountContext';
 import { RoleProvider } from './contexts/RoleContext';
+import { ScheduleProvider } from './contexts/ScheduleContext';
+import { AttendanceProvider } from './contexts/AttendanceContext';
+import { ImportReceiptProvider } from './contexts/ImportReceiptContext';
+import { InventoryExportProvider } from './contexts/InventoryExportContext';
 import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/dashboard/Dashboard';
 import MenuProducts from './pages/dishes/MenuProducts';
@@ -35,6 +39,20 @@ import Accounts from './pages/accounts/Accounts';
 import AccountCreate from './pages/accounts/AccountCreate';
 import Roles from './pages/roles/Roles';
 import RoleCreate from './pages/roles/RoleCreate';
+import Schedules from './pages/schedules/Schedules';
+import ScheduleCreate from './pages/schedules/ScheduleCreate';
+import ScheduleDetail from './pages/schedules/ScheduleDetail';
+import ScheduleEdit from './pages/schedules/ScheduleEdit';
+import Attendance from './pages/attendance/Attendance';
+import AttendanceDetail from './pages/attendance/AttendanceDetail';
+import ImportReceiptList from './pages/inventory/imports/ImportReceiptList';
+import ImportReceiptCreate from './pages/inventory/imports/ImportReceiptCreate';
+import ImportReceiptDetail from './pages/inventory/imports/ImportReceiptDetail';
+import ImportReceiptEdit from './pages/inventory/imports/ImportReceiptEdit';
+import ExportReceiptList from './pages/inventory/exports/ExportReceiptList';
+import ExportReceiptCreate from './pages/inventory/exports/ExportReceiptCreate';
+import ExportReceiptDetail from './pages/inventory/exports/ExportReceiptDetail';
+import ExportReceiptEdit from './pages/inventory/exports/ExportReceiptEdit';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -70,6 +88,20 @@ function AppRoutes() {
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="suppliers/new" element={<SupplierCreate />} />
         <Route path="themes" element={<Themes />} />
+        <Route path="attendance" element={<Attendance />} />
+        <Route path="attendance/:id" element={<AttendanceDetail />} />
+        <Route path="inventory/imports" element={<ImportReceiptList />} />
+        <Route path="inventory/imports/create" element={<ImportReceiptCreate />} />
+        <Route path="inventory/imports/:id" element={<ImportReceiptDetail />} />
+        <Route path="inventory/imports/:id/edit" element={<ImportReceiptEdit />} />
+        <Route path="inventory/exports" element={<ExportReceiptList />} />
+        <Route path="inventory/exports/create" element={<ExportReceiptCreate />} />
+        <Route path="inventory/exports/:id" element={<ExportReceiptDetail />} />
+        <Route path="inventory/exports/:id/edit" element={<ExportReceiptEdit />} />
+        <Route path="schedules" element={<Schedules />} />
+        <Route path="schedules/create" element={<ScheduleCreate />} />
+        <Route path="schedules/:id" element={<ScheduleDetail />} />
+        <Route path="schedules/:id/edit" element={<ScheduleEdit />} />
         <Route path="vouchers" element={<Vouchers />} />
         <Route path="vouchers/create" element={<VoucherCreate />} />
         <Route path="promotions" element={<Promotions />} />
@@ -96,7 +128,15 @@ function App() {
         <SupplierProvider>
           <RoleProvider>
           <AccountProvider>
+          <ScheduleProvider>
+          <AttendanceProvider>
+          <ImportReceiptProvider>
+          <InventoryExportProvider>
           <AppRoutes />
+          </InventoryExportProvider>
+          </ImportReceiptProvider>
+          </AttendanceProvider>
+          </ScheduleProvider>
           </AccountProvider>
           </RoleProvider>
         </SupplierProvider>
