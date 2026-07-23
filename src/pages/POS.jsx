@@ -1,16 +1,47 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { products } from '../data/mockData';
-import { Search, Plus, Minus, Trash2, ArrowLeft, ShoppingBag, Coffee, Receipt, CreditCard, Banknote, Smartphone, X, CheckCircle } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ArrowLeft, ShoppingBag, Coffee, Receipt, CreditCard, Banknote, Smartphone, X, CheckCircle, Tag, Percent } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const CATEGORIES = ['Tất cả', 'Cà phê', 'Trà', 'Trà sữa', 'Đá xay', 'Nước ép'];
+
+const SIZES = [
+  { key: 'small', label: 'Nhỏ', priceAdjust: -2000 },
+  { key: 'medium', label: 'Vừa', priceAdjust: 0 },
+  { key: 'large', label: 'Lớn', priceAdjust: 5000 },
+];
+
+const SWEETNESS_LEVELS = [
+  { value: 0, label: '0%' },
+  { value: 30, label: '30%' },
+  { value: 50, label: '50%' },
+  { value: 70, label: '70%' },
+  { value: 100, label: '100%' },
+];
 
 const PAYMENT_METHODS = [
   { id: 'cash',     label: 'Tiền mặt',      icon: Banknote },
   { id: 'transfer', label: 'Chuyển khoản',  icon: Smartphone },
   { id: 'card',     label: 'Thẻ',           icon: CreditCard },
 ];
+
+const coupons = [
+  { code: 'SALE10', type: 'fixed', value: 10000, minOrder: 0, description: 'Giảm 10.000đ' },
+  { code: 'SALE20', type: 'percent', value: 10, minOrder: 50000, description: 'Giảm 10%', maxDiscount: 20000 },
+  { code: 'WELCOME', type: 'fixed', value: 15000, minOrder: 0, description: 'Giảm 15.000đ cho khách mới' },
+];
+
+const productPromotions = {
+  'CF001': { discount: 5000, label: 'KM đặc biệt' },
+  'TS001': { discount: 3000, label: 'Giảm trà sữa' },
+};
+
+let itemCounter = 0;
+function nextId() {
+  itemCounter += 1;
+  return `oi_${Date.now()}_${itemCounter}`;
+}
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
@@ -53,44 +84,111 @@ const checkVariants = {
 };
 
 export default function POS() {
-  const [order, setOrder]                 = useState([]);
-  const [category, setCategory]           = useState('Tất cả');
-  const [search, setSearch]               = useState('');
-  const [payment, setPayment]             = useState('cash');
-  const [particles, setParticles]         = useState({});
-  const [paid, setPaid]                   = useState(false);
+  const [order, setOrder] = useState([]);
+  const [category, setCategory] = useState('Tất cả');
+  const [search, setSearch] = useState('');
+  const [payment, setPayment] = useState('cash');
+  const [particles, setParticles] = useState({});
+  const [paid, setPaid] = useState(false);
+  const [customizeProduct, setCustomizeProduct] = useState(null);
+  const [customizeSize, setCustomizeSize] = useState('medium');
+  const [customizeSweetness, setCustomizeSweetness] = useState(50);
+  const [customizeNote, setCustomizeNote] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
   const navigate = useNavigate();
 
-  const addToOrder = useCallback((product) => {
-    setOrder(prev => {
-      const existing = prev.find(i => i.id === product.id);
-      if (existing) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { ...product, quantity: 1 }];
-    });
-    const key = Date.now();
-    setParticles(prev => ({ ...prev, [product.id]: key }));
-    setTimeout(() => setParticles(prev => { const n = { ...prev }; delete n[product.id]; return n; }), 650);
+  const openCustomize = useCallback((product) => {
+    setCustomizeProduct(product);
+    setCustomizeSize('medium');
+    setCustomizeSweetness(50);
+    setCustomizeNote('');
   }, []);
+
+  const closeCustomize = useCallback(() => {
+    setCustomizeProduct(null);
+  }, []);
+
+  const addCustomizedItem = useCallback(() => {
+    if (!customizeProduct) return;
+    const sizeInfo = SIZES.find(s => s.key === customizeSize);
+    const adjustedPrice = customizeProduct.price + (sizeInfo?.priceAdjust || 0);
+    const promo = productPromotions[customizeProduct.id];
+    const item = {
+      id: nextId(),
+      productId: customizeProduct.id,
+      name: customizeProduct.name,
+      image: customizeProduct.image,
+      category: customizeProduct.category,
+      size: customizeSize,
+      sizeLabel: sizeInfo?.label || 'Vừa',
+      sweetness: customizeSweetness,
+      note: customizeNote,
+      quantity: 1,
+      originalPrice: adjustedPrice,
+      promotionDiscount: promo ? promo.discount : 0,
+      promotionLabel: promo ? promo.label : null,
+      finalPrice: adjustedPrice - (promo ? promo.discount : 0),
+    };
+    setOrder(prev => [...prev, item]);
+    const key = Date.now();
+    setParticles(prev => ({ ...prev, [customizeProduct.id]: key }));
+    setTimeout(() => setParticles(prev => { const n = { ...prev }; delete n[customizeProduct.id]; return n; }), 650);
+    setCustomizeProduct(null);
+  }, [customizeProduct, customizeSize, customizeSweetness, customizeNote]);
 
   const removeItem = useCallback((id) => {
     setOrder(prev => prev.filter(i => i.id !== id));
   }, []);
 
-  const updateQuantity = (id, delta) => {
+  const updateQuantity = useCallback((id, delta) => {
     setOrder(prev => prev.flatMap(item => {
       if (item.id !== id) return [item];
       const newQ = item.quantity + delta;
       if (newQ <= 0) return [];
       return [{ ...item, quantity: newQ }];
     }));
-  };
+  }, []);
+
+  const applyCoupon = useCallback(() => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) { setCouponError('Vui lòng nhập mã giảm giá'); setAppliedCoupon(null); return; }
+    const found = coupons.find(c => c.code === code);
+    if (!found) { setCouponError('Mã giảm giá không hợp lệ'); setAppliedCoupon(null); return; }
+    const subtotal = order.reduce((s, i) => s + i.finalPrice * i.quantity, 0);
+    if (subtotal < found.minOrder) {
+      setCouponError(`Đơn tối thiểu ${fmt(found.minOrder)} để áp dụng mã này`);
+      setAppliedCoupon(null);
+      return;
+    }
+    setAppliedCoupon(found);
+    setCouponError('');
+  }, [couponCode, order]);
+
+  const removeCoupon = useCallback(() => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+  }, []);
 
   const handlePay = () => {
     setPaid(true);
-    setTimeout(() => { setOrder([]); setPaid(false); }, 2200);
+    setTimeout(() => { setOrder([]); setPaid(false); removeCoupon(); }, 2200);
   };
 
-  const subtotal  = order.reduce((s, i) => s + i.price * i.quantity, 0);
+  const subtotal = order.reduce((s, i) => s + i.finalPrice * i.quantity, 0);
+  const totalPromotionDiscount = order.reduce((s, i) => s + (i.promotionDiscount || 0) * i.quantity, 0);
+  let couponDiscount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.type === 'fixed') {
+      couponDiscount = appliedCoupon.value;
+    } else if (appliedCoupon.type === 'percent') {
+      couponDiscount = Math.round(subtotal * appliedCoupon.value / 100);
+      if (appliedCoupon.maxDiscount) couponDiscount = Math.min(couponDiscount, appliedCoupon.maxDiscount);
+    }
+  }
+  const grandTotal = Math.max(0, subtotal - couponDiscount);
   const itemCount = order.reduce((s, i) => s + i.quantity, 0);
 
   const filtered = products.filter(p =>
@@ -98,16 +196,81 @@ export default function POS() {
     (!search || p.name.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const sizeLabel = (key) => SIZES.find(s => s.key === key)?.label || key;
+  const sweetnessLabel = (v) => `${v}%`;
+
   return (
     <div className="pos-container">
 
-      <div className="pos-left">
+      {/* CUSTOMIZATION MODAL */}
+      {customizeProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4" onClick={closeCustomize}>
+          <div className="card animate-fade-slide-in w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-lg bg-bg overflow-hidden flex-shrink-0">
+                  {customizeProduct.image ? (
+                    <img src={customizeProduct.image} alt={customizeProduct.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted"><Coffee size={24} /></div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-base truncate">{customizeProduct.name}</h3>
+                  <p className="text-sm text-primary font-bold">{fmt(customizeProduct.price)}</p>
+                </div>
+              </div>
+              <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={closeCustomize}>×</button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2">Size</label>
+                <div className="flex items-center gap-2">
+                  {SIZES.map(s => {
+                    const adjusted = customizeProduct.price + s.priceAdjust;
+                    return (
+                      <button key={s.key}
+                        className={`flex-1 py-2 px-3 rounded-lg border text-sm font-semibold transition ${customizeSize === s.key ? 'border-primary bg-primary-light text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
+                        onClick={() => setCustomizeSize(s.key)}
+                      >
+                        <div>{s.label}</div>
+                        <div className="text-xs font-normal">{adjusted >= customizeProduct.price ? '+' : ''}{fmt(s.priceAdjust)}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2">Độ ngọt</label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {SWEETNESS_LEVELS.map(s => (
+                    <button key={s.value}
+                      className={`py-1.5 px-4 rounded-lg border text-sm font-semibold transition ${customizeSweetness === s.value ? 'border-primary bg-primary-light text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
+                      onClick={() => setCustomizeSweetness(s.value)}
+                    >{s.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Ghi chú thêm</label>
+                <textarea placeholder="Ít đá, không đá, thêm topping..."
+                  className="w-full resize-vertical" rows={3}
+                  value={customizeNote} onChange={e => setCustomizeNote(e.target.value)} />
+              </div>
+              <div className="flex gap-3 mt-2">
+                <button className="btn flex-1 modal-btn" onClick={closeCustomize}>Hủy</button>
+                <button className="btn btn-primary flex-1 modal-btn" onClick={addCustomizedItem}>Thêm vào đơn</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
+      <div className="pos-left">
         <div className="pos-topbar">
           <button onClick={() => navigate('/dashboard')} className="pos-back-btn">
             <ArrowLeft size={16} /> Quay lại
           </button>
-
           <div className="pos-search-wrapper">
             <Search size={16} className="pos-search-icon" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm món..." className="pos-search-input" />
@@ -115,7 +278,6 @@ export default function POS() {
               <button onClick={() => setSearch('')} className="pos-search-clear"><X size={16} /></button>
             )}
           </div>
-
           <div className="pos-brand-badge">
             <Coffee size={16} className="text-primary" />
             <span className="pos-brand-text">DEZ LAB</span>
@@ -130,38 +292,33 @@ export default function POS() {
         </div>
 
         <div className="pos-grid">
-          {filtered.map(p => {
-            const inOrder = order.find(i => i.id === p.id);
-            return (
-              <motion.div
-                key={p.id}
-                className={`product-card card ${inOrder ? 'pos-product-selected' : ''}`}
-                variants={cardVariants}
-                initial="idle"
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => addToOrder(p)}
-                animate={particles[p.id] ? { boxShadow: ['0 0 0 0 rgba(108,17,30,0.4)', '0 0 0 8px rgba(108,17,30,0)', '0 0 0 0 rgba(108,17,30,0)'] } : {}}
-                transition={particles[p.id] ? { duration: 0.5 } : {}}
-              >
-                {particles[p.id] && <AddParticle id={particles[p.id]} />}
-                {inOrder && (
-                  <motion.div className="pos-product-badge"
-                    variants={badgeVariants}
-                    initial="initial"
-                    animate="animate"
-                  >{inOrder.quantity}</motion.div>
+          {filtered.map(p => (
+            <motion.div
+              key={p.id}
+              className="product-card card p-0 flex flex-col overflow-hidden rounded-xl"
+              variants={cardVariants}
+              initial="idle"
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => openCustomize(p)}
+              animate={particles[p.id] ? { boxShadow: ['0 0 0 0 rgba(108,17,30,0.4)', '0 0 0 8px rgba(108,17,30,0)', '0 0 0 0 rgba(108,17,30,0)'] } : {}}
+              transition={particles[p.id] ? { duration: 0.5 } : {}}
+            >
+              {particles[p.id] && <AddParticle id={particles[p.id]} />}
+              <div className="relative w-full h-40 md:h-48 bg-bg overflow-hidden">
+                {p.image ? (
+                  <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted"><Coffee size={40} /></div>
                 )}
-                <div className="pos-product-img" style={{ backgroundImage: `url(${p.image})` }}>
-                  <span className="pos-product-category">{p.category}</span>
-                </div>
-                <div className="pos-product-info">
-                  <div className="pos-product-name">{p.name}</div>
-                  <div className="pos-product-price">{fmt(p.price)}</div>
-                </div>
-              </motion.div>
-            );
-          })}
+                <span className="absolute bottom-2 left-2 badge badge-neutral text-xs bg-white/90">{p.category}</span>
+              </div>
+              <div className="p-3 flex flex-col gap-0.5">
+                <div className="font-bold text-sm break-words leading-tight">{p.name}</div>
+                <div className="font-bold text-base text-primary">{fmt(p.price)}</div>
+              </div>
+            </motion.div>
+          ))}
           {filtered.length === 0 && (
             <motion.div className="pos-empty"
               initial={{ opacity: 0 }}
@@ -186,7 +343,6 @@ export default function POS() {
             >{itemCount} món</motion.span>
           )}
         </div>
-        <div className="pos-order-meta">🪑 Bàn 12 &nbsp;•&nbsp; 🛍 Mang về</div>
 
         <div className="pos-order-items">
           <AnimatePresence mode="popLayout">
@@ -211,10 +367,20 @@ export default function POS() {
                   exit="exit"
                   layout
                 >
-                  <div className="flex items-start justify-between mb-2 gap-1">
-                    <span className="pos-order-item-name">{item.name}</span>
-                    <span className="pos-order-item-price">{fmt(item.price * item.quantity)}</span>
+                  <div className="flex items-start justify-between mb-1 gap-1">
+                    <span className="pos-order-item-name text-sm">{item.name}</span>
+                    <span className="pos-order-item-price text-sm">{fmt(item.finalPrice * item.quantity)}</span>
                   </div>
+                  <div className="text-xs text-muted mb-2">
+                    {item.sizeLabel && <div>Size: {item.sizeLabel}</div>}
+                    <div className="mt-0.5">Đường: {sweetnessLabel(item.sweetness)}</div>
+                    {item.note && <div className="mt-0.5">Ghi chú: {item.note}</div>}
+                  </div>
+                  {item.promotionDiscount > 0 && (
+                    <div className="text-xs font-semibold text-success mb-2 flex items-center gap-1">
+                      <Tag size={12} /> {item.promotionLabel || 'KM'}: -{fmt(item.promotionDiscount)}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <button onClick={() => removeItem(item.id)} className="pos-order-delete">
                       <Trash2 size={13} /> Xóa
@@ -237,16 +403,53 @@ export default function POS() {
         </div>
 
         <div className="pos-order-footer">
-          <div className="flex justify-between text-xs text-muted mb-1">
-            <span>Tạm tính</span><span className="font-semibold text-main">{fmt(subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-xs text-muted mb-2">
-            <span>Giảm giá</span><span className="font-semibold text-success">—</span>
-          </div>
-          <div className="pos-order-total">
-            <span className="font-bold text-base">Tổng cộng</span>
-            <span className="pos-order-total-amount">{fmt(subtotal)}</span>
-          </div>
+          {order.length > 0 && (
+            <>
+              <div className="mb-3">
+                <label className="text-xs font-semibold text-muted mb-1.5 block">Mã giảm giá</label>
+                <div className="flex items-center gap-2">
+                  {appliedCoupon ? (
+                    <div className="flex-1 flex items-center justify-between bg-success-light px-3 py-2 rounded-lg">
+                      <div>
+                        <span className="text-sm font-bold text-success">{appliedCoupon.code}</span>
+                        <span className="text-xs text-muted ml-2">{appliedCoupon.description}</span>
+                      </div>
+                      <button className="text-muted hover-text-danger cursor-pointer" onClick={removeCoupon}><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <>
+                      <input type="text" placeholder="Nhập mã giảm giá" className="flex-1 h-36px text-sm"
+                        value={couponCode} onChange={e => setCouponCode(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && applyCoupon()} />
+                      <button className="btn btn-primary text-xs h-36px px-3 whitespace-nowrap" onClick={applyCoupon}>Áp dụng</button>
+                    </>
+                  )}
+                </div>
+                {couponError && <p className="text-xs text-danger mt-1">{couponError}</p>}
+              </div>
+
+              <div className="text-xs mb-2">
+                <div className="flex justify-between text-muted">
+                  <span>Tạm tính</span><span className="font-semibold text-main">{fmt(subtotal)}</span>
+                </div>
+                {totalPromotionDiscount > 0 && (
+                  <div className="flex justify-between text-muted mt-1">
+                    <span>Giảm giá khuyến mãi</span><span className="font-semibold text-success">-{fmt(totalPromotionDiscount)}</span>
+                  </div>
+                )}
+                {appliedCoupon && couponDiscount > 0 && (
+                  <div className="flex justify-between text-muted mt-1">
+                    <span>Mã giảm giá</span><span className="font-semibold text-success">-{fmt(couponDiscount)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pos-order-total">
+                <span className="font-bold text-base">Tổng cộng</span>
+                <span className="pos-order-total-amount">{fmt(grandTotal)}</span>
+              </div>
+            </>
+          )}
 
           <div className="pos-payment-grid">
             {PAYMENT_METHODS.map(({ id, label, icon: Icon }) => (
@@ -273,7 +476,7 @@ export default function POS() {
                 <CheckCircle size={22} /> Thanh toán thành công!
               </motion.span>
             ) : (
-              <>💳 Thanh toán {order.length > 0 ? fmt(subtotal) : ''}</>
+              <>💳 Thanh toán {order.length > 0 ? fmt(grandTotal) : ''}</>
             )}
           </motion.button>
         </div>
