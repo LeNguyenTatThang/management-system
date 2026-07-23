@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { StaffProvider } from './contexts/StaffContext';
 import { MenuProductProvider } from './contexts/MenuProductContext';
@@ -11,6 +12,8 @@ import MenuProducts from './pages/MenuProducts';
 import Recipes from './pages/Recipes';
 import POS from './pages/POS';
 import Ingredients from './pages/Ingredients';
+import IngredientCreate from './pages/IngredientCreate';
+import IngredientDetail from './pages/IngredientDetail';
 import Orders from './pages/Orders';
 import Staff from './pages/Staff';
 import Suppliers from './pages/Suppliers';
@@ -41,6 +44,8 @@ function AppRoutes() {
         <Route path="recipes" element={<Recipes />} />
         <Route path="pos" element={<POS />} />
         <Route path="ingredients" element={<Ingredients />} />
+        <Route path="ingredients/create" element={<IngredientCreate />} />
+        <Route path="ingredients/:id" element={<IngredientDetail />} />
         <Route path="orders" element={<Orders />} />
         <Route path="staff" element={<Staff />} />
         <Route path="suppliers" element={<Suppliers />} />
@@ -52,6 +57,7 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" toastOptions={{ duration: 3000, style: { fontFamily: 'var(--font-sans)' } }} />
       <AuthProvider>
         <StaffProvider>
         <MenuProductProvider>
