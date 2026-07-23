@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Coffee, LayoutDashboard, UtensilsCrossed, 
-  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift
+  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, UserCog, Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -11,6 +11,8 @@ const navGroups = [
     items: [
       { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
       { name: 'Nhân viên', icon: Users, path: '/staff' },
+      { name: 'Tài khoản', icon: UserCog, path: '/accounts' },
+      { name: 'Vai trò', icon: Shield, path: '/accounts/roles' },
       { name: 'Theme', icon: Palette, path: '/themes' },
       { name: 'Voucher', icon: Tag, path: '/vouchers' },
       { name: 'Chương trình KM', icon: Gift, path: '/promotions' },
@@ -61,6 +63,7 @@ export default function Sidebar() {
               <NavLink 
                 key={j} 
                 to={item.path} 
+                end={item.path === '/accounts'}
                 className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
               >
                 <item.icon size={18} />

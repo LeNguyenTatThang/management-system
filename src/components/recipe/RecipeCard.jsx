@@ -67,7 +67,7 @@ export default function RecipeCard({ item, product, onClick, onEdit, onDelete })
         )}
       </div>
 
-      <div className="px-4 py-3 bg-rose-50 border-t border-b border-soft">
+      <div className="ml-3 mr-3 px-4 py-3 bg-rose-50 border-t border-b border-soft rounded-xl">
         <div className="flex items-center gap-1.5 text-xs font-bold uppercase text-primary mb-2">
           <ChefHat size={14} /> Cách làm
         </div>

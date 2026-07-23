@@ -82,6 +82,7 @@ export default function AdminLayout() {
                     <NavLink
                       key={j}
                       to={item.path}
+                      end={item.path === '/accounts'}
                       className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                       onClick={() => setMobileMenuOpen(false)}
                     >
