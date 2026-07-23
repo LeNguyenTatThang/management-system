@@ -125,7 +125,7 @@ export default function MenuProducts() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full min-w-0">
             {filtered.map(item => (
               <div key={item.id} className="card p-0 flex flex-col overflow-hidden rounded-xl recipe-card-hover cursor-pointer transition group">
-                <div className="relative w-full aspect-[4/3] bg-bg overflow-hidden">
+                <div className="relative w-full h-48 bg-bg overflow-hidden">
                   {item.image ? (
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                   ) : (
