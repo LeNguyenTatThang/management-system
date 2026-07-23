@@ -16,24 +16,24 @@ const navGroups = [
       { name: 'Theme', icon: Palette, path: '/themes' },
       { name: 'Voucher', icon: Tag, path: '/vouchers' },
       { name: 'Chương trình KM', icon: Gift, path: '/promotions' },
-    ]
+    ],
   },
   {
     title: 'BÁN HÀNG',
     items: [
       { name: 'Bán hàng / POS', icon: ShoppingCart, path: '/pos' },
       { name: 'Đơn hàng', icon: FileText, path: '/orders' },
-    ]
+    ],
   },
   {
     title: 'NHẬP LIỆU',
     items: [
-      { name: 'Nguyên liệu', icon: Package, path: '/ingredients' },
-      { name: 'Công thức', icon: UtensilsCrossed, path: '/recipes' },
       { name: 'Món', icon: Coffee, path: '/products' },
+      { name: 'Công thức', icon: UtensilsCrossed, path: '/recipes' },
+      { name: 'Nguyên liệu', icon: Package, path: '/ingredients' },
       { name: 'Nhà cung cấp', icon: Store, path: '/suppliers' },
-    ]
-  }
+    ],
+  },
 ];
 
 export default function Sidebar() {

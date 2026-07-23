@@ -1,16 +1,16 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { products, mockVouchers, mockPromotions } from '../../data/mockData';
-import { Search, Plus, Minus, Trash2, ArrowLeft, ShoppingBag, Coffee, Receipt, CreditCard, Banknote, Smartphone, X, CheckCircle, Tag, Percent } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ArrowLeft, ShoppingBag, Coffee, Receipt, Banknote, Smartphone, X, CheckCircle, Tag, Percent } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FormTextarea from '../../components/ui/FormTextarea';
 
 const CATEGORIES = ['Tất cả', 'Cà phê', 'Trà', 'Trà sữa', 'Đá xay', 'Nước ép'];
 
 const SIZES = [
-  { key: 'small', label: 'Nhỏ', priceAdjust: -2000 },
-  { key: 'medium', label: 'Vừa', priceAdjust: 0 },
-  { key: 'large', label: 'Lớn', priceAdjust: 5000 },
+  { key: 'small', label: 'S', priceAdjust: -2000 },
+  { key: 'medium', label: 'M', priceAdjust: 0 },
+  { key: 'large', label: 'L', priceAdjust: 5000 },
 ];
 
 const SWEETNESS_LEVELS = [
@@ -24,7 +24,6 @@ const SWEETNESS_LEVELS = [
 const PAYMENT_METHODS = [
   { id: 'cash',     label: 'Tiền mặt',      icon: Banknote },
   { id: 'transfer', label: 'Chuyển khoản',  icon: Smartphone },
-  { id: 'card',     label: 'Thẻ',           icon: CreditCard },
 ];
 
 const activeVouchers = mockVouchers.filter(v => v.status === 'active');
@@ -118,7 +117,7 @@ export default function POS() {
       image: customizeProduct.image,
       category: customizeProduct.category,
       size: customizeSize,
-      sizeLabel: sizeInfo?.label || 'Vừa',
+      sizeLabel: sizeInfo?.label || 'M',
       sweetness: customizeSweetness,
       note: customizeNote,
       quantity: 1,
@@ -229,8 +228,8 @@ export default function POS() {
                         className={`flex-1 py-2 px-3 rounded-lg border text-sm font-semibold transition ${customizeSize === s.key ? 'border-primary bg-primary-light text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
                         onClick={() => setCustomizeSize(s.key)}
                       >
-                        <div>{s.label}</div>
-                        <div className="text-xs font-normal">{adjusted >= customizeProduct.price ? '+' : ''}{fmt(s.priceAdjust)}</div>
+                        <div className="text-base font-bold">{s.label}</div>
+                        <div className="text-xs font-semibold">{fmt(adjusted)}</div>
                       </button>
                     );
                   })}
@@ -291,27 +290,49 @@ export default function POS() {
           {filtered.map(p => (
             <motion.div
               key={p.id}
-              className="product-card card p-0 flex flex-col overflow-hidden rounded-xl"
+              className="product-card card p-0 flex flex-col overflow-hidden rounded-xl cursor-pointer"
               variants={cardVariants}
               initial="idle"
               whileHover="hover"
               whileTap="tap"
               onClick={() => openCustomize(p)}
-              animate={particles[p.id] ? { boxShadow: ['0 0 0 0 rgba(108,17,30,0.4)', '0 0 0 8px rgba(108,17,30,0)', '0 0 0 0 rgba(108,17,30,0)'] } : {}}
+              animate={
+                particles[p.id]
+                  ? {
+                      boxShadow: [
+                        '0 0 0 0 rgba(108,17,30,0.4)',
+                        '0 0 0 8px rgba(108,17,30,0)',
+                        '0 0 0 0 rgba(108,17,30,0)'
+                      ]
+                    }
+                  : {}
+              }
               transition={particles[p.id] ? { duration: 0.5 } : {}}
             >
               {particles[p.id] && <AddParticle id={particles[p.id]} />}
+
               <div className="relative w-full h-40 md:h-48 bg-bg overflow-hidden">
                 {p.image ? (
-                  <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="w-full h-full object-cover transition-transform duration-300"
+                  />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted"><Coffee size={40} /></div>
+                  <div className="w-full h-full flex items-center justify-center text-muted">
+                    <Coffee size={40} />
+                  </div>
                 )}
-                <span className="absolute bottom-2 left-2 badge badge-neutral text-xs bg-white/90">{p.category}</span>
+
+                <span className="absolute bottom-2 left-2 badge badge-neutral text-xs bg-white/90">
+                  {p.category}
+                </span>
               </div>
-              <div className="p-3 flex flex-col gap-0.5">
-                <div className="font-bold text-sm break-words leading-tight">{p.name}</div>
-                <div className="font-bold text-base text-primary">{fmt(p.price)}</div>
+
+              <div className="px-3 py-3 flex items-center justify-center min-h-14">
+                <div className="font-bold text-sm text-center break-words leading-snug">
+                  {p.name}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -454,7 +475,7 @@ export default function POS() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <Icon size={18} />
+                <div className="pay-icon"><Icon size={20} /></div>
                 <span>{label}</span>
               </motion.button>
             ))}

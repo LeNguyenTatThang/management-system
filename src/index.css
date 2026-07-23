@@ -1128,26 +1128,39 @@ tbody tr:hover {
 
 .pos-payment-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
   margin-bottom: 14px;
 }
 
 .pay-btn {
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   border: 1.5px solid var(--border-color);
-  border-radius: 10px;
-  padding: 10px 8px;
-  font-size: 12px;
+  border-radius: 12px;
+  padding: 14px 8px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.pay-btn .pay-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-bottom: 2px;
 }
 .pay-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+.pay-btn.active .pay-icon { background: var(--primary); color: #fff; }
 
 .pos-pay-btn {
   width: 100%;
@@ -1238,12 +1251,20 @@ tbody tr:hover {
     font-size: 18px;
   }
   .pos-payment-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 6px;
   }
   .pay-btn {
-    padding: 8px 4px;
+    padding: 10px 4px;
     font-size: 11px;
+  }
+  .pay-btn .pay-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .pay-btn .pay-icon svg {
+    width: 16px;
+    height: 16px;
   }
 }
 
