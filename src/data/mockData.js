@@ -31,6 +31,27 @@ export const inventoryWarnings = [
   { id: 3, name: 'Syrup đào', stock: '300ml', status: 'Sắp hết' },
 ];
 
+export const mockThemes = [
+  { id: 'TH01', name: 'Mặc định (Burgundy)', description: 'Theme mặc định của hệ thống với tông màu đỏ Burgundy đặc trưng.', preview: 'https://placehold.co/400x250/6c111e/ffffff?text=Burgundy', status: 'active' },
+  { id: 'TH02', name: 'Xanh dương', description: 'Theme tông màu xanh dương hiện đại, phù hợp không gian trẻ trung.', preview: 'https://placehold.co/400x250/1e40af/ffffff?text=Blue', status: 'inactive' },
+  { id: 'TH03', name: 'Xanh lá', description: 'Theme tông màu xanh lá thiên nhiên, thư giãn.', preview: 'https://placehold.co/400x250/166534/ffffff?text=Green', status: 'inactive' },
+  { id: 'TH04', name: 'Tối (Dark)', description: 'Theme tối dành cho quán bar hoặc không gian ánh sáng yếu.', preview: 'https://placehold.co/400x250/1f2937/ffffff?text=Dark', status: 'inactive' },
+];
+
+export const mockVouchers = [
+  { id: 'VC01', code: 'SALE10', name: 'Giảm 10K', type: 'fixed', value: 10000, minOrder: 0, maxDiscount: null, startDate: '01/07/2026', endDate: '31/07/2026', usageLimit: 100, usedCount: 23, status: 'active', description: 'Giảm 10.000đ cho đơn hàng bất kỳ.' },
+  { id: 'VC02', code: 'SALE20', name: 'Giảm 10%', type: 'percent', value: 10, minOrder: 50000, maxDiscount: 20000, startDate: '01/07/2026', endDate: '31/07/2026', usageLimit: 50, usedCount: 12, status: 'active', description: 'Giảm 10% giá trị đơn hàng, tối đa 20.000đ.' },
+  { id: 'VC03', code: 'WELCOME', name: 'Chào mừng', type: 'fixed', value: 15000, minOrder: 0, maxDiscount: null, startDate: '01/06/2026', endDate: '31/12/2026', usageLimit: 200, usedCount: 45, status: 'active', description: 'Giảm 15.000đ cho khách hàng mới.' },
+  { id: 'VC04', code: 'SALE50K', name: 'Giảm 50K', type: 'fixed', value: 50000, minOrder: 200000, maxDiscount: null, startDate: '01/07/2026', endDate: '15/07/2026', usageLimit: 30, usedCount: 30, status: 'expired', description: 'Giảm 50.000đ cho đơn từ 200.000đ.' },
+  { id: 'VC05', code: 'SUMMER', name: 'Mùa hè xanh', type: 'percent', value: 15, minOrder: 100000, maxDiscount: 30000, startDate: '01/06/2026', endDate: '31/08/2026', usageLimit: 100, usedCount: 67, status: 'active', description: 'Giảm 15% đơn từ 100.000đ, tối đa 30.000đ.' },
+];
+
+export const mockPromotions = [
+  { id: 'KM01', name: 'HAPPY HOUR', description: 'Giảm giá cho khung giờ vàng 14:00-17:00', type: 'percent', value: 20, applyTo: 'category', categoryIds: ['Cà phê'], productIds: [], startDate: '01/07/2026', endDate: '31/07/2026', timeStart: '14:00', timeEnd: '17:00', status: 'active' },
+  { id: 'KM02', name: 'Giảm trà sữa', description: 'Giảm giá đặc biệt cho trà sữa trân châu', type: 'fixed', value: 5000, applyTo: 'product', productIds: ['TS001'], categoryIds: [], startDate: '01/07/2026', endDate: '31/07/2026', timeStart: '', timeEnd: '', status: 'active' },
+  { id: 'KM03', name: 'Khuyến mãi cà phê sữa', description: 'Giảm giá cho cà phê sữa mỗi buổi sáng', type: 'fixed', value: 3000, applyTo: 'product', productIds: ['CF001'], categoryIds: [], startDate: '01/07/2026', endDate: '31/07/2026', timeStart: '06:00', timeEnd: '10:00', status: 'inactive' },
+];
+
 export const products = [
   { id: 'CF001', name: 'Cà phê sữa', category: 'Cà phê', price: 25000, cost: 7640, profit: 17360, status: 'Đang bán', updatedAt: '22/07/2026', image: 'https://coffee.alexflipnote.dev/random?1', tags: ['Khẩu', 'Ống hút ngắn', 'Thìa ngắn'], size: '360ml', fc: '30.6%' },
   { id: 'CF002', name: 'Bạc xỉu', category: 'Cà phê', price: 30000, cost: 8500, profit: 21500, status: 'Đang bán', updatedAt: '21/07/2026', image: 'https://coffee.alexflipnote.dev/random?2', tags: ['Khẩu', 'Ống hút'], size: '360ml', fc: '28.3%' },

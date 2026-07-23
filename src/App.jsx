@@ -20,6 +20,9 @@ import Orders from './pages/Orders';
 import Staff from './pages/Staff';
 import Suppliers from './pages/Suppliers';
 import SupplierCreate from './pages/SupplierCreate';
+import Themes from './pages/Themes';
+import Vouchers from './pages/Vouchers';
+import Promotions from './pages/Promotions';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -55,6 +58,9 @@ function AppRoutes() {
         <Route path="staff" element={<Staff />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="suppliers/new" element={<SupplierCreate />} />
+        <Route path="themes" element={<Themes />} />
+        <Route path="vouchers" element={<Vouchers />} />
+        <Route path="promotions" element={<Promotions />} />
       </Route>
     </Routes>
   );

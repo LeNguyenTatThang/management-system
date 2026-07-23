@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { products } from '../data/mockData';
+import { products, mockVouchers, mockPromotions } from '../data/mockData';
 import { Search, Plus, Minus, Trash2, ArrowLeft, ShoppingBag, Coffee, Receipt, CreditCard, Banknote, Smartphone, X, CheckCircle, Tag, Percent } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,16 +26,7 @@ const PAYMENT_METHODS = [
   { id: 'card',     label: 'Thẻ',           icon: CreditCard },
 ];
 
-const coupons = [
-  { code: 'SALE10', type: 'fixed', value: 10000, minOrder: 0, description: 'Giảm 10.000đ' },
-  { code: 'SALE20', type: 'percent', value: 10, minOrder: 50000, description: 'Giảm 10%', maxDiscount: 20000 },
-  { code: 'WELCOME', type: 'fixed', value: 15000, minOrder: 0, description: 'Giảm 15.000đ cho khách mới' },
-];
-
-const productPromotions = {
-  'CF001': { discount: 5000, label: 'KM đặc biệt' },
-  'TS001': { discount: 3000, label: 'Giảm trà sữa' },
-};
+const activeVouchers = mockVouchers.filter(v => v.status === 'active');
 
 let itemCounter = 0;
 function nextId() {
@@ -114,7 +105,11 @@ export default function POS() {
     if (!customizeProduct) return;
     const sizeInfo = SIZES.find(s => s.key === customizeSize);
     const adjustedPrice = customizeProduct.price + (sizeInfo?.priceAdjust || 0);
-    const promo = productPromotions[customizeProduct.id];
+    const activePromos = mockPromotions.filter(p =>
+      p.status === 'active' &&
+      (p.applyTo === 'product' ? p.productIds.includes(customizeProduct.id) : p.categoryIds.includes(customizeProduct.category))
+    );
+    const promo = activePromos.length > 0 ? { discount: activePromos[0].value, label: activePromos[0].name } : null;
     const item = {
       id: nextId(),
       productId: customizeProduct.id,
@@ -154,7 +149,7 @@ export default function POS() {
   const applyCoupon = useCallback(() => {
     const code = couponCode.trim().toUpperCase();
     if (!code) { setCouponError('Vui lòng nhập mã giảm giá'); setAppliedCoupon(null); return; }
-    const found = coupons.find(c => c.code === code);
+    const found = activeVouchers.find(c => c.code === code);
     if (!found) { setCouponError('Mã giảm giá không hợp lệ'); setAppliedCoupon(null); return; }
     const subtotal = order.reduce((s, i) => s + i.finalPrice * i.quantity, 0);
     if (subtotal < found.minOrder) {

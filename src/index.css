@@ -318,6 +318,7 @@ tbody tr:hover {
   background-color: var(--card-bg);
   border-right: 1px solid var(--border-color);
   height: 100%;
+  overflow: hidden;
 }
 
 .sidebar-header {
@@ -330,28 +331,47 @@ tbody tr:hover {
 
 .sidebar-nav {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--spacing-4) 0;
 }
 
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.sidebar-nav {
+  scrollbar-width: thin;
+}
+
 .nav-group {
-  margin-bottom: var(--spacing-4);
+  margin-bottom: 6px;
 }
 
 .nav-group-title {
   padding: 0 var(--spacing-4);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   color: var(--text-muted);
-  font-weight: 600;
-  margin-bottom: var(--spacing-2);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
-  padding: 9px var(--spacing-4);
+  padding: 7px var(--spacing-4);
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.875rem;
