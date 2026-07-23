@@ -3,9 +3,9 @@ import { createContext, useContext, useState, useCallback } from 'react';
 const STORAGE_KEY = 'dezlab_suppliers';
 
 const initialSuppliers = [
-  { id: 'NCC01', name: 'Công ty CP Sữa Việt Nam', contact: 'Anh Hùng', email: 'hung@vinamilk.com', phone: '0987654321', address: '123 Nguyễn Văn Cừ, TPHCM' },
-  { id: 'NCC02', name: 'PP Cà Phê Trung Nguyên', contact: 'Chị Mai', email: 'mai@trungnguyen.com', phone: '0987654322', address: '456 Lê Duẩn, TPHCM' },
-  { id: 'NCC03', name: 'Đại lý Nguyên Liệu Pha Chế', contact: 'Anh Tuấn', email: 'tuan@nlpc.vn', phone: '0987654323', address: '789 CMT8, TPHCM' },
+  { id: 'NCC01', name: 'Công ty CP Sữa Việt Nam', contact: 'Anh Hùng', email: 'hung@vinamilk.com', phone: '0987654321', address: '123 Nguyễn Văn Cừ, TPHCM', description: 'Cung cấp sữa và các sản phẩm từ sữa.', notes: 'Giao hàng thứ 2 và thứ 5 hàng tuần.' },
+  { id: 'NCC02', name: 'PP Cà Phê Trung Nguyên', contact: 'Chị Mai', email: 'mai@trungnguyen.com', phone: '0987654322', address: '456 Lê Duẩn, TPHCM', description: 'Phân phối cà phê hạt và bột.', notes: 'Cần đặt trước 3 ngày.' },
+  { id: 'NCC03', name: 'Đại lý Nguyên Liệu Pha Chế', contact: 'Anh Tuấn', email: 'tuan@nlpc.vn', phone: '0987654323', address: '789 CMT8, TPHCM', description: 'Cung cấp topping, siro và nguyên liệu pha chế.', notes: '' },
 ];
 
 function loadData() {
