@@ -1,36 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useImportReceipt } from '../../../contexts/ImportReceiptContext';
-import { useSupplier } from '../../../contexts/SupplierContext';
 import { useIngredient } from '../../../contexts/IngredientContext';
-import { ArrowLeft, Calendar, MapPin, Store, FileText, Package, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Calendar, FileText, Package, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
 import FormSection from '../../../components/ui/FormSection';
-import DatePicker from '../../../components/ui/DatePicker';
-import { BRANCHES } from '../../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
 
 export default function ImportReceiptCreate() {
   const navigate = useNavigate();
   const { createImport } = useImportReceipt();
-  const { suppliers } = useSupplier();
   const { ingredients } = useIngredient();
 
-  const [date, setDate] = useState('');
-  const [supplierId, setSupplierId] = useState('');
-  const [branchId, setBranchId] = useState('');
+  const todayStr = () => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+  const [date] = useState(todayStr());
   const [note, setNote] = useState('');
   const [items, setItems] = useState([
-    { ingredientId: '', ingredientName: '', unit: '', quantity: '', unitPrice: '', amount: 0, note: '' },
+    { ingredientId: '', ingredientName: '', unit: '', quantity: '', unitPrice: '', amount: 0, expiryDate: '', note: '' },
   ]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   const activeIngredients = ingredients.filter(i => i.active !== false);
-
-  useEffect(() => {
-    if (date) setErrors(prev => ({ ...prev, date: '' }));
-  }, [date]);
 
   const handleItemChange = (index, field, value) => {
     setItems(prev => {
@@ -45,6 +39,7 @@ export default function ImportReceiptCreate() {
           quantity: '',
           unitPrice: ing?.averageImportPrice || '',
           amount: 0,
+          expiryDate: '',
           note: '',
         };
       } else if (field === 'quantity' || field === 'unitPrice') {
@@ -60,7 +55,7 @@ export default function ImportReceiptCreate() {
   };
 
   const addRow = () => {
-    setItems(prev => [...prev, { ingredientId: '', ingredientName: '', unit: '', quantity: '', unitPrice: '', amount: 0, note: '' }]);
+    setItems(prev => [...prev, { ingredientId: '', ingredientName: '', unit: '', quantity: '', unitPrice: '', amount: 0, expiryDate: '', note: '' }]);
   };
 
   const removeRow = (index) => {
@@ -80,8 +75,6 @@ export default function ImportReceiptCreate() {
   const validate = () => {
     const errs = {};
     if (!date.trim()) errs.date = 'Vui lòng chọn ngày nhập';
-    if (!supplierId) errs.supplierId = 'Vui lòng chọn nhà cung cấp';
-    if (!branchId) errs.branchId = 'Vui lòng chọn kho/chi nhánh';
     if (validItemsCount === 0) errs.items = 'Vui lòng thêm ít nhất 1 nguyên liệu';
 
     items.forEach((item, i) => {
@@ -103,14 +96,8 @@ export default function ImportReceiptCreate() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const supplier = suppliers.find(s => s.id === supplierId);
-      const branch = BRANCHES.find(b => b.id === branchId);
       await createImport({
         date: date.trim(),
-        supplierId,
-        supplierName: supplier?.name || '',
-        branchId,
-        branchName: branch?.name || '',
         note: note.trim(),
         status,
         items: items.filter(i => i.ingredientId).map(i => ({
@@ -120,6 +107,7 @@ export default function ImportReceiptCreate() {
           quantity: parseFloat(i.quantity),
           unitPrice: parseFloat(i.unitPrice),
           amount: (parseFloat(i.quantity) || 0) * (parseFloat(i.unitPrice) || 0),
+          expiryDate: i.expiryDate || '',
           note: i.note.trim(),
         })),
       });
@@ -149,32 +137,10 @@ export default function ImportReceiptCreate() {
         </div>
 
         <FormSection icon={Calendar} title="THÔNG TIN PHIẾU NHẬP" className="mb-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-semibold mb-1.5">Ngày nhập <span className="text-danger">*</span></label>
-              <DatePicker value={date} onChange={setDate} placeholder="Chọn ngày nhập" error={errors.date} />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1.5">Nhà cung cấp <span className="text-danger">*</span></label>
-              <select className={`w-full modal-input ${errors.supplierId ? 'border-danger' : ''}`}
-                value={supplierId} onChange={e => setSupplierId(e.target.value)}>
-                <option value="">-- Chọn nhà cung cấp --</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              {errors.supplierId && <p className="text-xs text-danger mt-1">{errors.supplierId}</p>}
-              {suppliers.length === 0 && (
-                <p className="text-xs text-muted mt-1">Chưa có nhà cung cấp. Vui lòng thêm nhà cung cấp trước.</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1.5">Kho/Chi nhánh <span className="text-danger">*</span></label>
-              <select className={`w-full modal-input ${errors.branchId ? 'border-danger' : ''}`}
-                value={branchId} onChange={e => setBranchId(e.target.value)}>
-                <option value="">-- Chọn kho/chi nhánh --</option>
-                {BRANCHES.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-              {errors.branchId && <p className="text-xs text-danger mt-1">{errors.branchId}</p>}
-            </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1.5">Ngày nhập <span className="text-danger">*</span></label>
+            <input type="text" className="w-full modal-input bg-gray-50 text-sm text-muted cursor-not-allowed"
+              value={date} readOnly disabled />
           </div>
         </FormSection>
 
@@ -187,15 +153,16 @@ export default function ImportReceiptCreate() {
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-full" style={{ minWidth: '700px' }}>
+            <table className="w-full" style={{ minWidth: '850px' }}>
               <thead>
                 <tr className="text-xs font-semibold text-muted">
-                  <th className="text-left p-2" style={{ width: '28%' }}>Nguyên liệu</th>
+                  <th className="text-left p-2" style={{ width: '22%' }}>Nguyên liệu</th>
                   <th className="text-left p-2" style={{ width: '8%' }}>ĐVT</th>
-                  <th className="text-left p-2" style={{ width: '12%' }}>Số lượng</th>
-                  <th className="text-left p-2" style={{ width: '15%' }}>Đơn giá</th>
-                  <th className="text-left p-2" style={{ width: '15%' }}>Thành tiền</th>
-                  <th className="text-left p-2" style={{ width: '17%' }}>Ghi chú</th>
+                  <th className="text-left p-2" style={{ width: '12%' }}>Hạn sử dụng</th>
+                  <th className="text-left p-2" style={{ width: '10%' }}>Số lượng</th>
+                  <th className="text-left p-2" style={{ width: '12%' }}>Đơn giá</th>
+                  <th className="text-left p-2" style={{ width: '13%' }}>Thành tiền</th>
+                  <th className="text-left p-2" style={{ width: '13%' }}>Ghi chú</th>
                   <th className="text-center p-2" style={{ width: '5%' }}></th>
                 </tr>
               </thead>
@@ -214,7 +181,17 @@ export default function ImportReceiptCreate() {
                       </select>
                     </td>
                     <td className="p-1">
-                      <input type="text" className="w-full modal-input text-sm bg-gray-50 text-muted text-center" value={item.unit} readOnly />
+                      <select className="w-full modal-input text-sm"
+                        value={item.unit} onChange={e => handleItemChange(i, 'unit', e.target.value)}>
+                        <option value="">-- ĐVT --</option>
+                        {[...new Set(activeIngredients.map(ing => ing.unit).filter(Boolean))].sort().map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-1">
+                      <input type="date" className="w-full modal-input text-sm"
+                        value={item.expiryDate} onChange={e => handleItemChange(i, 'expiryDate', e.target.value)} />
                     </td>
                     <td className="p-1">
                       <input type="number" step="0.01" min="0" className={`w-full modal-input text-sm text-right ${errors[`qty_${i}`] ? 'border-danger' : ''}`}

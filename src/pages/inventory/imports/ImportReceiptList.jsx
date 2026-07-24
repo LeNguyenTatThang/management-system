@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useImportReceipt } from '../../../contexts/ImportReceiptContext';
 import { useSupplier } from '../../../contexts/SupplierContext';
-import { Plus, Search, Eye, Edit3, CheckCircle, XCircle, PackageCheck } from 'lucide-react';
+import { Plus, Search, Edit3, CheckCircle, XCircle, PackageCheck } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
 import ResponsiveTable from '../../../components/ui/ResponsiveTable';
 import FilterPopover from '../../../components/ui/FilterPopover';
@@ -15,9 +15,6 @@ const STATUS_CONFIG = {
   received: { label: 'Đã nhập kho', color: '#10b981', bg: '#ecfdf5' },
   cancelled: { label: 'Đã hủy', color: '#ef4444', bg: '#fef2f2' },
 };
-
-const STATUS_LABELS = {};
-Object.entries(STATUS_CONFIG).forEach(([k, v]) => { STATUS_LABELS[k] = v.label; });
 
 function fmtMoney(amount) {
   return (amount || 0).toLocaleString('vi-VN') + ' ₫';
@@ -132,40 +129,22 @@ export default function ImportReceiptList() {
                 <tr>
                   <th>Mã phiếu</th>
                   <th>Ngày nhập</th>
-                  <th>Nhà cung cấp</th>
-                  <th className="hidden md:table-cell">Kho/Chi nhánh</th>
-                  <th className="hidden md:table-cell">Số mặt hàng</th>
                   <th className="hidden md:table-cell">Tổng tiền</th>
                   <th className="hidden md:table-cell">Người tạo</th>
-                  <th>Trạng thái</th>
                   <th className="text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(r => {
-                  const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.draft;
                   return (
                     <tr key={r.id} className="cursor-pointer transition hover-bg-primary-light"
                       onClick={() => navigate(`/inventory/imports/${r.id}`)}>
                       <td className="whitespace-nowrap font-semibold">{r.code}</td>
                       <td className="whitespace-nowrap">{r.date}</td>
-                      <td className="text-sm">{r.supplierName}</td>
-                      <td className="hidden md:table-cell text-sm text-muted">{r.branchName}</td>
-                      <td className="hidden md:table-cell text-sm">{r.totalItems}</td>
                       <td className="hidden md:table-cell text-sm font-semibold">{fmtMoney(r.totalAmount)}</td>
                       <td className="hidden md:table-cell text-sm text-muted">{r.createdBy}</td>
-                      <td>
-                        <span className="badge font-semibold" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
-                          {cfg.label}
-                        </span>
-                      </td>
                       <td className="text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
-                          <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
-                            onClick={e => { e.stopPropagation(); navigate(`/inventory/imports/${r.id}`); }}
-                            title="Xem chi tiết">
-                            <Eye size={16} />
-                          </button>
                           {r.status === 'draft' && (
                             <>
                               <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
@@ -200,7 +179,7 @@ export default function ImportReceiptList() {
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={9} className="text-center text-muted py-8">Không tìm thấy phiếu nhập kho</td></tr>
+                  <tr><td colSpan={5} className="text-center text-muted py-8">Không tìm thấy phiếu nhập kho</td></tr>
                 )}
               </tbody>
             </ResponsiveTable>
