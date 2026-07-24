@@ -98,7 +98,7 @@ export default function POS() {
   const [customizeSweetness, setCustomizeSweetness] = useState(50);
   const [customizeNote, setCustomizeNote] = useState('');
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [appliedCoupons, setAppliedCoupons] = useState([]);
   const [couponError, setCouponError] = useState('');
   const navigate = useNavigate();
 
@@ -164,41 +164,45 @@ export default function POS() {
 
   const applyCoupon = useCallback(() => {
     const code = couponCode.trim().toUpperCase();
-    if (!code) { setCouponError('Vui lòng nhập mã giảm giá'); setAppliedCoupon(null); return; }
+    if (!code) { setCouponError('Vui lòng nhập mã giảm giá'); return; }
+    if (appliedCoupons.some(c => c.code === code)) {
+      setCouponError('Mã giảm giá đã được áp dụng');
+      return;
+    }
     const found = activeVouchers.find(c => c.code === code);
-    if (!found) { setCouponError('Mã giảm giá không hợp lệ'); setAppliedCoupon(null); return; }
+    if (!found) { setCouponError('Mã giảm giá không hợp lệ'); return; }
     const subtotal = order.reduce((s, i) => s + i.finalPrice * i.quantity, 0);
     if (subtotal < found.minOrder) {
       setCouponError(`Đơn tối thiểu ${fmt(found.minOrder)} để áp dụng mã này`);
-      setAppliedCoupon(null);
       return;
     }
-    setAppliedCoupon(found);
-    setCouponError('');
-  }, [couponCode, order]);
-
-  const removeCoupon = useCallback(() => {
-    setAppliedCoupon(null);
+    setAppliedCoupons(prev => [...prev, found]);
     setCouponCode('');
+    setCouponError('');
+  }, [couponCode, order, appliedCoupons]);
+
+  const removeCoupon = useCallback((code) => {
+    setAppliedCoupons(prev => prev.filter(c => c.code !== code));
     setCouponError('');
   }, []);
 
   const handlePay = () => {
     setPaid(true);
-    setTimeout(() => { setOrder([]); setPaid(false); removeCoupon(); }, 2200);
+    setTimeout(() => { setOrder([]); setPaid(false); setAppliedCoupons([]); }, 2200);
   };
 
   const subtotal = order.reduce((s, i) => s + i.finalPrice * i.quantity, 0);
   const totalPromotionDiscount = order.reduce((s, i) => s + (i.promotionDiscount || 0) * i.quantity, 0);
   let couponDiscount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.type === 'fixed') {
-      couponDiscount = appliedCoupon.value;
-    } else if (appliedCoupon.type === 'percent') {
-      couponDiscount = Math.round(subtotal * appliedCoupon.value / 100);
-      if (appliedCoupon.maxDiscount) couponDiscount = Math.min(couponDiscount, appliedCoupon.maxDiscount);
+  appliedCoupons.forEach(c => {
+    if (c.type === 'fixed') {
+      couponDiscount += c.value;
+    } else if (c.type === 'percent') {
+      let d = Math.round(subtotal * c.value / 100);
+      if (c.maxDiscount) d = Math.min(d, c.maxDiscount);
+      couponDiscount += d;
     }
-  }
+  });
   const grandTotal = Math.max(0, subtotal - couponDiscount);
   const itemCount = order.reduce((s, i) => s + i.quantity, 0);
 
@@ -234,32 +238,34 @@ export default function POS() {
               <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={closeCustomize}>×</button>
             </div>
             <div className="flex flex-col gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2">Size</label>
-                <div className="flex items-center gap-2">
-                  {SIZES.map(s => {
-                    const adjusted = customizeProduct.price + s.priceAdjust;
-                    return (
-                      <button key={s.key}
-                        className={`flex-1 py-2 px-3 rounded-lg border text-sm font-semibold transition ${customizeSize === s.key ? 'border-primary bg-primary-light text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
-                        onClick={() => setCustomizeSize(s.key)}
-                      >
-                        <div className="text-base font-bold">{s.label}</div>
-                        <div className="text-xs font-semibold">{fmt(adjusted)}</div>
-                      </button>
-                    );
-                  })}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Size</label>
+                  <div className="flex items-center gap-2">
+                    {SIZES.map(s => {
+                      const adjusted = customizeProduct.price + s.priceAdjust;
+                      return (
+                        <button key={s.key}
+                          className={`flex-1 py-2 px-3 rounded-lg border text-sm font-semibold transition ${customizeSize === s.key ? 'border-primary bg-primary-light text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
+                          onClick={() => setCustomizeSize(s.key)}
+                        >
+                          <div className="text-base font-bold">{s.label}</div>
+                          <div className="text-xs font-semibold">{fmt(adjusted)}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2">Độ ngọt</label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {SWEETNESS_LEVELS.map(s => (
-                    <button key={s.value}
-                      className={`py-1.5 px-4 rounded-lg border text-sm font-semibold transition ${customizeSweetness === s.value ? 'border-primary bg-primary-light text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
-                      onClick={() => setCustomizeSweetness(s.value)}
-                    >{s.label}</button>
-                  ))}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Đường</label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {SWEETNESS_LEVELS.map(s => (
+                      <button key={s.value}
+                        className={`py-1.5 px-4 rounded-lg border text-sm font-semibold transition ${customizeSweetness === s.value ? 'border-primary bg-primary-light text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
+                        onClick={() => setCustomizeSweetness(s.value)}
+                      >{s.label}</button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div>
@@ -439,26 +445,41 @@ export default function POS() {
           {order.length > 0 && (
             <>
               <div className="mb-3">
-                <label className="text-xs font-semibold text-muted mb-1.5 block">Mã giảm giá</label>
+                <label className="text-xs font-semibold text-muted mb-1.5 block">Voucher</label>
                 <div className="flex items-center gap-2">
-                  {appliedCoupon ? (
-                    <div className="flex-1 flex items-center justify-between bg-success-light px-3 py-2 rounded-lg">
-                      <div>
-                        <span className="text-sm font-bold text-success">{appliedCoupon.code}</span>
-                        <span className="text-xs text-muted ml-2">{appliedCoupon.description}</span>
-                      </div>
-                      <button className="text-muted hover-text-danger cursor-pointer" onClick={removeCoupon}><X size={16} /></button>
-                    </div>
-                  ) : (
-                    <>
-                      <input type="text" placeholder="Nhập mã giảm giá" className="flex-1 h-36px text-sm"
-                        value={couponCode} onChange={e => setCouponCode(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && applyCoupon()} />
-                      <button className="btn btn-primary text-xs h-36px px-3 whitespace-nowrap" onClick={applyCoupon}>Áp dụng</button>
-                    </>
-                  )}
+                  <input type="text" placeholder="Nhập mã voucher" className="flex-1 h-36px text-sm"
+                    value={couponCode} onChange={e => setCouponCode(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && applyCoupon()} />
+                  <button className="btn btn-primary text-xs h-36px px-3 whitespace-nowrap" onClick={applyCoupon}>Áp dụng</button>
                 </div>
                 {couponError && <p className="text-xs text-danger mt-1">{couponError}</p>}
+                {appliedCoupons.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-xs font-semibold text-muted mb-1">Voucher được áp dụng</div>
+                    {appliedCoupons.map((c, i) => {
+                      let disc = 0;
+                      if (c.type === 'fixed') disc = c.value;
+                      else if (c.type === 'percent') {
+                        disc = Math.round(subtotal * c.value / 100);
+                        if (c.maxDiscount) disc = Math.min(disc, c.maxDiscount);
+                      }
+                      return (
+                        <div key={c.code}>
+                          {i > 0 && <hr className="border-t border-gray-200" style={{ margin: '2px 0' }} />}
+                          <div className="flex items-center justify-between px-2 py-1">
+                            <span className="text-xs font-semibold">{c.code}</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-semibold text-success">-{fmt(disc)}</span>
+                              <button className="text-muted hover-text-danger cursor-pointer flex items-center" onClick={() => removeCoupon(c.code)}>
+                                <X size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="text-xs mb-2">
@@ -470,9 +491,9 @@ export default function POS() {
                     <span>Giảm giá khuyến mãi</span><span className="font-semibold text-success">-{fmt(totalPromotionDiscount)}</span>
                   </div>
                 )}
-                {appliedCoupon && couponDiscount > 0 && (
+                {appliedCoupons.length > 0 && couponDiscount > 0 && (
                   <div className="flex justify-between text-muted mt-1">
-                    <span>Mã giảm giá</span><span className="font-semibold text-success">-{fmt(couponDiscount)}</span>
+                    <span>Voucher</span><span className="font-semibold text-success">-{fmt(couponDiscount)}</span>
                   </div>
                 )}
               </div>
