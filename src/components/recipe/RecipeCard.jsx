@@ -25,8 +25,8 @@ export default function RecipeCard({ item, product, onClick, onEdit, onDelete })
   };
 
   return (
-    <div className="card p-0 flex flex-col min-w-0 cursor-pointer transition recipe-card-hover" onClick={handleClick}>
-      <div className="flex items-center gap-3 p-4 min-w-0">
+    <div className="card flex flex-col min-w-0 cursor-pointer transition recipe-card-hover" onClick={handleClick}>
+      <div className="flex items-center gap-3 min-w-0">
         <div className="w-20 h-20 rounded-lg bg-bg overflow-hidden flex-shrink-0">
           {item.image ? (
             <img src={item.image} alt={item.productName || item.name} className="w-full h-full object-cover" />
@@ -41,7 +41,7 @@ export default function RecipeCard({ item, product, onClick, onEdit, onDelete })
             {product?.size && <span className="badge badge-neutral text-xs">{product.size}</span>}
           </div>
           {product?.tags && product.tags.length > 0 && (
-            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+            <div className="flex items-center gap-1 mt-2 flex-wrap">
               {product.tags.map((t, i) => (
                 <span key={i} className="text-xs text-muted bg-gray-100 px-2 py-0.5 rounded-full">{t}</span>
               ))}
@@ -67,7 +67,7 @@ export default function RecipeCard({ item, product, onClick, onEdit, onDelete })
         )}
       </div>
 
-      <div className="ml-3 mr-3 px-4 py-3 bg-rose-50 border-t border-b border-soft rounded-xl">
+      <div className="px-3 py-3 bg-rose-50 border-t border-b border-soft rounded-xl">
         <div className="flex items-center gap-1.5 text-xs font-bold uppercase text-primary mb-2">
           <ChefHat size={14} /> Cách làm
         </div>
@@ -82,7 +82,7 @@ export default function RecipeCard({ item, product, onClick, onEdit, onDelete })
         )}
       </div>
 
-      <div className="p-4 pt-3 flex-1 min-w-0">
+      <div className="px-3 pt-2 pb-2 flex-1 min-w-0">
         <div className="flex items-center gap-1.5 text-xs font-bold uppercase text-primary mb-2">
           <Package size={14} /> Nguyên liệu
         </div>
@@ -114,7 +114,7 @@ export default function RecipeCard({ item, product, onClick, onEdit, onDelete })
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-1 px-4 py-2 border-t border-soft bg-gray-50">
+      <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-soft bg-gray-50">
         <button className="p-1.5 text-muted hover-text-primary cursor-pointer" title="Chỉnh sửa" onClick={handleEdit}><Edit3 size={15} /></button>
         <button className="p-1.5 text-muted hover-text-danger cursor-pointer" title="Xóa" onClick={handleDelete}><Trash2 size={15} /></button>
       </div>
