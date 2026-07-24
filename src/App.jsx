@@ -25,6 +25,7 @@ import IngredientCreate from './pages/ingredients/IngredientCreate';
 import IngredientDetail from './pages/ingredients/IngredientDetail';
 import Orders from './pages/orders/Orders';
 import OrderCreate from './pages/orders/OrderCreate';
+import OrderDetail from './pages/orders/OrderDetail';
 import Staff from './pages/employees/Staff';
 import EmployeeCreate from './pages/employees/EmployeeCreate';
 import Suppliers from './pages/suppliers/Suppliers';
@@ -81,6 +82,7 @@ function AppRoutes() {
         <Route path="recipes/new" element={<RecipeComponentCreate />} />
         <Route path="pos" element={<POS />} />
         <Route path="orders/create" element={<OrderCreate />} />
+        <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="ingredients" element={<Ingredients />} />
         <Route path="ingredients/create" element={<IngredientCreate />} />
         <Route path="ingredients/:id" element={<IngredientDetail />} />

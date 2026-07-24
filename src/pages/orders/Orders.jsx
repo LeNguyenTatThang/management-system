@@ -1,23 +1,33 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Eye, Plus } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import ResponsiveTable from '../../components/ui/ResponsiveTable';
 import FilterPopover from '../../components/ui/FilterPopover';
-
-const orders = [
-  { id: 'DH001', time: '10:24 22/07', items: 3, total: 95000, payment: 'Tiền mặt', staff: 'Nguyễn Văn A', status: 'Hoàn thành' },
-  { id: 'DH002', time: '10:30 22/07', items: 1, total: 35000, payment: 'Chuyển khoản', staff: 'Nguyễn Văn A', status: 'Hoàn thành' },
-  { id: 'DH003', time: '10:45 22/07', items: 5, total: 155000, payment: 'Thẻ', staff: 'Trần Thị B', status: 'Đang xử lý' },
-  { id: 'DH004', time: '11:02 22/07', items: 2, total: 60000, payment: 'Tiền mặt', staff: 'Trần Thị B', status: 'Đã hủy' },
-];
+import { mockOrders } from '../../data/mockData';
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+function getAllOrders() {
+  const stored = localStorage.getItem('savedOrders');
+  const saved = stored ? JSON.parse(stored) : [];
+  return [...mockOrders, ...saved].map(o => ({
+    id: o.id,
+    time: o.time,
+    items: o.items ? o.items.reduce((s, i) => s + i.quantity, 0) : 0,
+    total: o.grandTotal || 0,
+    payment: o.payment || 'Chưa thanh toán',
+    staff: o.staff,
+    status: o.status,
+  }));
+}
 
 export default function Orders() {
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDate, setFilterDate] = useState('');
+
+  const orders = useMemo(() => getAllOrders(), []);
 
   return (
     <PageContainer>
@@ -102,7 +112,7 @@ export default function Orders() {
                     </span>
                   </td>
                   <td className="text-right">
-                    <button className="p-1 text-muted hover-text-primary"><Eye size={18} /></button>
+                    <button className="p-1 text-muted hover-text-primary" onClick={() => navigate(`/orders/${item.id}`)}><Eye size={18} /></button>
                   </td>
                 </tr>
               ))}
