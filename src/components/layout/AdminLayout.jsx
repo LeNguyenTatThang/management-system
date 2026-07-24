@@ -43,7 +43,7 @@ export default function AdminLayout() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isPOS = location.pathname.includes('/pos');
+  const isPOS = location.pathname.includes('/pos') || location.pathname.includes('/orders/create');
 
   const handleLogout = () => {
     logout();

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Eye, Plus } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import ResponsiveTable from '../../components/ui/ResponsiveTable';
 import FilterPopover from '../../components/ui/FilterPopover';
@@ -14,17 +15,24 @@ const orders = [
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
 export default function Orders() {
+  const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDate, setFilterDate] = useState('');
 
   return (
     <PageContainer>
       <div className="flex flex-col gap-4 w-full min-w-0">
-        <div className="flex flex-row items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <h2 className="text-xl font-bold">Đơn hàng</h2>
             <p className="text-muted text-sm">Quản lý {orders.length} đơn hàng</p>
           </div>
+          <button
+            className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
+            onClick={() => navigate('/orders/create')}
+          >
+            <Plus size={18} /> Tạo đơn
+          </button>
         </div>
 
         <div className="card p-3 min-w-0">
