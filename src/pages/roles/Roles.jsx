@@ -20,10 +20,10 @@ export default function Roles() {
   const handleSave = (data) => {
     if (editItem) {
       updateRole(editItem.id, data);
-      toast.success('Cập nhật vai trò thành công');
+      toast.success('Cập nhật chức vụ thành công');
     } else {
       addRole(data);
-      toast.success('Thêm vai trò thành công');
+      toast.success('Thêm chức vụ thành công');
     }
     setShowModal(false);
     setEditItem(null);
@@ -43,10 +43,14 @@ export default function Roles() {
     setConfirmDelete(role);
   };
 
+  const handleToggleStatus = (role) => {
+    updateRole(role.id, { status: role.status === 'Đang hoạt động' ? 'Không hoạt động' : 'Đang hoạt động' });
+  };
+
   const confirmDeleteRole = () => {
     if (!confirmDelete) return;
     deleteRole(confirmDelete.id);
-    toast.success(`Đã xóa vai trò "${confirmDelete.name}"`);
+    toast.success(`Đã xóa chức vụ "${confirmDelete.name}"`);
     setConfirmDelete(null);
   };
 
@@ -55,14 +59,14 @@ export default function Roles() {
       <div className="flex flex-col gap-4 w-full min-w-0">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
-            <h2 className="text-xl font-bold">Quản lý vai trò</h2>
-            <p className="text-muted text-sm">Quản lý {roles.length} vai trò và phân quyền</p>
+            <h2 className="text-xl font-bold">Quản lý chức vụ</h2>
+            <p className="text-muted text-sm">Quản lý {roles.length} chức vụ và phân quyền</p>
           </div>
           <button
             className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
             onClick={() => navigate('/accounts/roles/create')}
           >
-            <Plus size={18} /> Thêm vai trò
+            <Plus size={18} /> Thêm chức vụ
           </button>
         </div>
 
@@ -87,7 +91,7 @@ export default function Roles() {
             <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
             <input
               type="text"
-              placeholder="Tìm theo tên vai trò..."
+              placeholder="Tìm theo tên chức vụ..."
               className="w-full pl-10 h-36px"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -99,6 +103,7 @@ export default function Roles() {
           roles={roles}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
           getAccountCount={getAccountCountByRole}
           searchTerm={searchTerm}
           filterStatus={filterStatus}
@@ -121,7 +126,7 @@ export default function Roles() {
               </div>
               <h3 className="font-bold text-lg">Xác nhận xóa</h3>
               <p className="text-sm text-muted">
-                Bạn có chắc chắn muốn xóa vai trò <strong>"{confirmDelete.name}"</strong>? Hành động này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa chức vụ <strong>"{confirmDelete.name}"</strong>? Hành động này không thể hoàn tác.
               </p>
             </div>
             <div className="flex gap-3 mt-6">

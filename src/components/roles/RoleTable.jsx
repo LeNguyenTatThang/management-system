@@ -1,10 +1,12 @@
 import { Shield, Edit3, Trash2, Users } from 'lucide-react';
 import ResponsiveTable from '../ui/ResponsiveTable';
+import ToggleSwitch from '../ui/ToggleSwitch';
 
 export default function RoleTable({
   roles,
   onEdit,
   onDelete,
+  onToggleStatus,
   getAccountCount,
   searchTerm,
   filterStatus,
@@ -21,7 +23,7 @@ export default function RoleTable({
         <div className="flex flex-col items-center justify-center py-16 text-muted gap-3">
           <Shield size={48} className="opacity-30" />
           <span className="text-sm font-semibold">
-            {searchTerm || filterStatus ? 'Không tìm thấy vai trò' : 'Chưa có vai trò nào'}
+            {searchTerm || filterStatus ? 'Không tìm thấy chức vụ' : 'Chưa có chức vụ nào'}
           </span>
         </div>
       </div>
@@ -34,7 +36,7 @@ export default function RoleTable({
         <thead>
           <tr>
             <th className="w-12 text-center">STT</th>
-            <th>Tên vai trò</th>
+            <th>Tên chức vụ</th>
             <th className="text-center">Số tài khoản</th>
             <th>Trạng thái</th>
             <th className="text-right">Thao tác</th>
@@ -59,10 +61,12 @@ export default function RoleTable({
                     <span className={count > 0 ? 'font-semibold' : 'text-muted'}>{count}</span>
                   </div>
                 </td>
-                <td>
-                  <span className={`badge ${role.status === 'Đang hoạt động' ? 'badge-success' : 'badge-danger'}`}>
-                    {role.status}
-                  </span>
+                <td className="text-center">
+                  <ToggleSwitch
+                    checked={role.status === 'Đang hoạt động'}
+                    onChange={() => onToggleStatus(role)}
+                    disabled={role.system}
+                  />
                 </td>
                 <td className="text-right whitespace-nowrap">
                   <div className="flex items-center justify-end gap-1">
@@ -77,7 +81,7 @@ export default function RoleTable({
                       className={`p-1.5 cursor-pointer ${role.system ? 'text-gray-300 cursor-not-allowed' : 'text-muted hover-text-danger'}`}
                       onClick={() => !role.system && onDelete(role)}
                       disabled={role.system}
-                      title={role.system ? 'Không thể xóa vai trò hệ thống' : 'Xóa'}
+                      title={role.system ? 'Không thể xóa chức vụ hệ thống' : 'Xóa'}
                     >
                       <Trash2 size={16} />
                     </button>

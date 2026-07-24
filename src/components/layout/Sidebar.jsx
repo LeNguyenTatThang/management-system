@@ -14,7 +14,7 @@ const navGroups = [
       { name: 'Lịch làm việc', icon: Calendar, path: '/schedules' },
       { name: 'Chấm công', icon: ClipboardCheck, path: '/attendance' },
       { name: 'Tài khoản', icon: UserCog, path: '/accounts' },
-      { name: 'Vai trò', icon: Shield, path: '/accounts/roles' },
+      { name: 'Chức vụ', icon: Shield, path: '/accounts/roles' },
       { name: 'Theme', icon: Palette, path: '/themes' },
       { name: 'Voucher', icon: Tag, path: '/vouchers' },
       { name: 'Chương trình KM', icon: Gift, path: '/promotions' },

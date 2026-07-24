@@ -3,6 +3,7 @@ import { Shield } from 'lucide-react';
 import PermissionMatrix from './PermissionMatrix';
 import { buildEmptyPermissions } from '../../types/role';
 import FormTextarea from '../ui/FormTextarea';
+import ToggleSwitch from '../ui/ToggleSwitch';
 
 export default function RoleModal({ show, onClose, onSave, editItem }) {
   const [form, setForm] = useState({ name: '', description: '', status: 'Đang hoạt động' });
@@ -27,7 +28,7 @@ export default function RoleModal({ show, onClose, onSave, editItem }) {
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = 'Vui lòng nhập tên vai trò';
+    if (!form.name.trim()) errs.name = 'Vui lòng nhập tên chức vụ';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -45,7 +46,7 @@ export default function RoleModal({ show, onClose, onSave, editItem }) {
         <div className="flex justify-between items-center mb-6 gap-4">
           <h3 className="font-bold text-lg truncate flex items-center gap-2">
             <Shield size={20} className="text-primary" />
-            {editItem ? 'Chỉnh sửa vai trò' : 'Thêm vai trò mới'}
+            {editItem ? 'Chỉnh sửa chức vụ' : 'Thêm chức vụ mới'}
           </h3>
           <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={onClose}>×</button>
         </div>
@@ -53,7 +54,7 @@ export default function RoleModal({ show, onClose, onSave, editItem }) {
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold mb-1">Tên vai trò <span className="text-danger">*</span></label>
+              <label className="block text-sm font-semibold mb-1">Tên chức vụ <span className="text-danger">*</span></label>
               <input
                 type="text"
                 placeholder="VD: Quản lý kho"
@@ -65,15 +66,17 @@ export default function RoleModal({ show, onClose, onSave, editItem }) {
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1">Trạng thái</label>
-              <select className="w-full modal-input" value={form.status} onChange={handleChange('status')}>
-                <option value="Đang hoạt động">Đang hoạt động</option>
-                <option value="Không hoạt động">Không hoạt động</option>
-              </select>
+              <div className="flex items-center h-[38px]">
+                <ToggleSwitch
+                  checked={form.status === 'Đang hoạt động'}
+                  onChange={(v) => setForm(p => ({ ...p, status: v ? 'Đang hoạt động' : 'Không hoạt động' }))}
+                />
+              </div>
             </div>
           </div>
           <FormTextarea
             label="Mô tả"
-            placeholder="Mô tả vai trò..."
+            placeholder="Mô tả chức vụ..."
             value={form.description}
             onChange={handleChange('description')}
             rows={2}
@@ -84,7 +87,7 @@ export default function RoleModal({ show, onClose, onSave, editItem }) {
           <div className="flex gap-3 mt-2 pt-4 border-t">
             <button className="btn flex-1 modal-btn" onClick={onClose}>Hủy</button>
             <button className="btn btn-primary flex-1 modal-btn" onClick={handleSave}>
-              {editItem ? 'Cập nhật' : 'Thêm vai trò'}
+              {editItem ? 'Cập nhật' : 'Thêm chức vụ'}
             </button>
           </div>
         </div>
