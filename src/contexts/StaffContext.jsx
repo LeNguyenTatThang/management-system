@@ -30,8 +30,6 @@ export function StaffProvider({ children }) {
     const newStaff = {
       id: `NV${String(staffList.length + 1).padStart(2, '0')}`,
       ...staff,
-      status: 'Đang làm',
-      startDate: new Date().toLocaleDateString('vi-VN')
     };
     const updated = [...staffList, newStaff];
     setStaffList(updated);
