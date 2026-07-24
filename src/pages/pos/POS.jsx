@@ -5,6 +5,18 @@ import { Search, Plus, Minus, Trash2, ArrowLeft, ShoppingBag, Coffee, Receipt, B
 import { useNavigate } from 'react-router-dom';
 import FormTextarea from '../../components/ui/FormTextarea';
 
+function isInTimeRange(promo) {
+  if (!promo.timeStart || !promo.timeEnd) return true;
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const [sh, sm] = promo.timeStart.split(':').map(Number);
+  const [eh, em] = promo.timeEnd.split(':').map(Number);
+  if (isNaN(sh) || isNaN(eh)) return true;
+  const s = sh * 60 + sm;
+  const e = eh * 60 + em;
+  return cur >= s && cur <= e;
+}
+
 const CATEGORIES = ['Tất cả', 'Cà phê', 'Trà', 'Trà sữa', 'Đá xay', 'Nước ép'];
 
 const SIZES = [
@@ -105,10 +117,14 @@ export default function POS() {
     if (!customizeProduct) return;
     const sizeInfo = SIZES.find(s => s.key === customizeSize);
     const adjustedPrice = customizeProduct.price + (sizeInfo?.priceAdjust || 0);
-    const activePromos = mockPromotions.filter(p =>
-      p.status === 'active' &&
-      (p.applyTo === 'product' ? p.productIds.includes(customizeProduct.id) : p.categoryIds.includes(customizeProduct.category))
-    );
+    const activePromos = mockPromotions.filter(p => {
+      if (p.status !== 'active') return false;
+      if (!isInTimeRange(p)) return false;
+      if (p.applyTo === 'timeframe') return true;
+      if (p.applyTo === 'product') return p.productIds.includes(customizeProduct.id);
+      if (p.applyTo === 'category') return p.categoryIds.includes(customizeProduct.category);
+      return false;
+    });
     const promo = activePromos.length > 0 ? { discount: activePromos[0].value, label: activePromos[0].name } : null;
     const item = {
       id: nextId(),

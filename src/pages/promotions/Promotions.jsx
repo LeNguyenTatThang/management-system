@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit3, Trash2, Search, Gift, X } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, Gift } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import ResponsiveTable from '../../components/ui/ResponsiveTable';
 import FormTextarea from '../../components/ui/FormTextarea';
+import MultiSelect from '../../components/ui/MultiSelect';
+import TimePicker from '../../components/ui/TimePicker';
+import DatePicker from '../../components/ui/DatePicker';
 import FilterPopover from '../../components/ui/FilterPopover';
 import { mockPromotions, products } from '../../data/mockData';
 import { toast } from 'react-hot-toast';
@@ -11,15 +14,19 @@ import { toast } from 'react-hot-toast';
 const TYPES = ['percent', 'fixed'];
 const TYPE_LABELS = { percent: '%', fixed: 'Tiền mặt' };
 const APPLY_OPTIONS = [
-  { value: 'category', label: 'Theo danh mục' },
-  { value: 'product', label: 'Theo sản phẩm' },
+  { value: 'timeframe', label: 'Áp dụng theo khung giờ' },
+  { value: 'product', label: 'Áp dụng theo món' },
+  { value: 'category', label: 'Áp dụng theo danh mục' },
 ];
 
 const CATEGORIES = ['Cà phê', 'Trà', 'Trà sữa', 'Đá xay', 'Nước ép'];
 
+const productOptions = products.map(p => ({ value: p.id, label: p.name }));
+const categoryOptions = CATEGORIES.map(c => ({ value: c, label: c }));
+
 const defaultForm = {
   name: '', description: '', type: 'percent', value: '',
-  applyTo: 'category', categoryIds: [], productIds: [],
+  applyTo: 'timeframe', categoryIds: [], productIds: [],
   startDate: '', endDate: '', timeStart: '', timeEnd: '', status: 'active'
 };
 
@@ -44,13 +51,6 @@ export default function Promotions() {
     return matchSearch && matchStatus;
   });
 
-  const toggleArrayItem = (field, item) => {
-    setForm(prev => ({
-      ...prev,
-      [field]: prev[field].includes(item) ? prev[field].filter(i => i !== item) : [...prev[field], item]
-    }));
-  };
-
   const openAdd = () => {
     navigate('/promotions/create');
   };
@@ -69,8 +69,16 @@ export default function Promotions() {
 
   const handleSave = () => {
     if (!form.name || !form.value) return;
+    if (form.applyTo === 'timeframe') {
+      if (!form.timeStart) { toast.error('Vui lòng chọn giờ bắt đầu'); return; }
+      if (!form.timeEnd) { toast.error('Vui lòng chọn giờ kết thúc'); return; }
+      if (form.timeStart >= form.timeEnd) { toast.error('Giờ kết thúc phải lớn hơn giờ bắt đầu'); return; }
+    }
     if (form.applyTo === 'category' && form.categoryIds.length === 0) { toast.error('Vui lòng chọn danh mục'); return; }
     if (form.applyTo === 'product' && form.productIds.length === 0) { toast.error('Vui lòng chọn sản phẩm'); return; }
+    if (!form.startDate) { toast.error('Vui lòng chọn ngày bắt đầu'); return; }
+    if (!form.endDate) { toast.error('Vui lòng chọn ngày kết thúc'); return; }
+    if (form.startDate >= form.endDate) { toast.error('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu'); return; }
     const payload = {
       ...form,
       value: Number(form.value),
@@ -96,6 +104,10 @@ export default function Promotions() {
   const getProductName = (id) => products.find(p => p.id === id)?.name || id;
 
   const getApplyTarget = (promo) => {
+    if (promo.applyTo === 'timeframe') {
+      if (promo.timeStart && promo.timeEnd) return `${promo.timeStart} - ${promo.timeEnd}`;
+      return 'Toàn thời gian';
+    }
     if (promo.applyTo === 'category') return promo.categoryIds?.join(', ') || '—';
     return promo.productIds?.map(id => getProductName(id)).join(', ') || '—';
   };
@@ -211,8 +223,8 @@ export default function Promotions() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Áp dụng cho</label>
-                <div className="flex items-center gap-3 mb-2">
+                <label className="block text-sm font-semibold mb-1">Điều kiện áp dụng</label>
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
                   {APPLY_OPTIONS.map(opt => (
                     <label key={opt.value} className="flex items-center gap-1.5 text-sm cursor-pointer">
                       <input type="radio" name="applyTo" value={opt.value} checked={form.applyTo === opt.value}
@@ -221,45 +233,80 @@ export default function Promotions() {
                     </label>
                   ))}
                 </div>
-                {form.applyTo === 'category' && (
-                  <div className="flex items-center gap-2 flex-wrap mt-1">
-                    {CATEGORIES.map(cat => (
-                      <button key={cat}
-                        className={`px-3 py-1 rounded-lg border text-xs font-semibold transition ${form.categoryIds.includes(cat) ? 'bg-primary-light border-primary text-primary' : 'border-gray-200 text-muted'}`}
-                        onClick={() => toggleArrayItem('categoryIds', cat)}
-                      >{cat}</button>
-                    ))}
+
+                {form.applyTo === 'timeframe' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Giờ bắt đầu <span className="text-danger">*</span></label>
+                      <TimePicker value={form.timeStart} onChange={v => setForm(p => ({ ...p, timeStart: v }))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Giờ kết thúc <span className="text-danger">*</span></label>
+                      <TimePicker value={form.timeEnd} onChange={v => setForm(p => ({ ...p, timeEnd: v }))} />
+                    </div>
                   </div>
                 )}
+
                 {form.applyTo === 'product' && (
-                  <div className="flex items-center gap-2 flex-wrap mt-1">
-                    {products.map(prod => (
-                      <button key={prod.id}
-                        className={`px-3 py-1 rounded-lg border text-xs font-semibold transition ${form.productIds.includes(prod.id) ? 'bg-primary-light border-primary text-primary' : 'border-gray-200 text-muted'}`}
-                        onClick={() => toggleArrayItem('productIds', prod.id)}
-                      >{prod.name}</button>
-                    ))}
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Chọn món <span className="text-danger">*</span></label>
+                      <MultiSelect
+                        options={productOptions}
+                        value={form.productIds}
+                        onChange={v => setForm(p => ({ ...p, productIds: v }))}
+                        placeholder="Chọn món..."
+                        searchPlaceholder="Tìm món..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Giờ bắt đầu (không bắt buộc)</label>
+                        <TimePicker value={form.timeStart} onChange={v => setForm(p => ({ ...p, timeStart: v }))} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Giờ kết thúc (không bắt buộc)</label>
+                        <TimePicker value={form.timeEnd} onChange={v => setForm(p => ({ ...p, timeEnd: v }))} />
+                      </div>
+                    </div>
+                    {!form.timeStart && !form.timeEnd && <p className="text-xs text-muted">Toàn thời gian</p>}
+                  </div>
+                )}
+
+                {form.applyTo === 'category' && (
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Chọn danh mục <span className="text-danger">*</span></label>
+                      <MultiSelect
+                        options={categoryOptions}
+                        value={form.categoryIds}
+                        onChange={v => setForm(p => ({ ...p, categoryIds: v }))}
+                        placeholder="Chọn danh mục..."
+                        searchPlaceholder="Tìm danh mục..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Giờ bắt đầu (không bắt buộc)</label>
+                        <TimePicker value={form.timeStart} onChange={v => setForm(p => ({ ...p, timeStart: v }))} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Giờ kết thúc (không bắt buộc)</label>
+                        <TimePicker value={form.timeEnd} onChange={v => setForm(p => ({ ...p, timeEnd: v }))} />
+                      </div>
+                    </div>
+                    {!form.timeStart && !form.timeEnd && <p className="text-xs text-muted">Toàn thời gian</p>}
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Ngày bắt đầu</label>
-                  <input type="text" placeholder="DD/MM/YYYY" className="w-full modal-input" value={form.startDate} onChange={handleChange('startDate')} />
+                  <label className="block text-sm font-semibold mb-1">Ngày bắt đầu <span className="text-danger">*</span></label>
+                  <DatePicker value={form.startDate} onChange={v => setForm(p => ({ ...p, startDate: v }))} placeholder="Chọn ngày bắt đầu" allowPast={true} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Ngày kết thúc</label>
-                  <input type="text" placeholder="DD/MM/YYYY" className="w-full modal-input" value={form.endDate} onChange={handleChange('endDate')} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Giờ bắt đầu</label>
-                  <input type="text" placeholder="VD: 14:00" className="w-full modal-input" value={form.timeStart} onChange={handleChange('timeStart')} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Giờ kết thúc</label>
-                  <input type="text" placeholder="VD: 17:00" className="w-full modal-input" value={form.timeEnd} onChange={handleChange('timeEnd')} />
+                  <label className="block text-sm font-semibold mb-1">Ngày kết thúc <span className="text-danger">*</span></label>
+                  <DatePicker value={form.endDate} onChange={v => setForm(p => ({ ...p, endDate: v }))} placeholder="Chọn ngày kết thúc" allowPast={true} />
                 </div>
               </div>
               <div>

@@ -4,16 +4,23 @@ import { ArrowLeft, Gift, Percent, Calendar, Settings } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import FormSection from '../../components/ui/FormSection';
 import FormTextarea from '../../components/ui/FormTextarea';
+import MultiSelect from '../../components/ui/MultiSelect';
+import TimePicker from '../../components/ui/TimePicker';
+import DatePicker from '../../components/ui/DatePicker';
 import { mockPromotions, products } from '../../data/mockData';
 import { toast } from 'react-hot-toast';
 
 const TYPES = ['percent', 'fixed'];
 const TYPE_LABELS = { percent: '%', fixed: 'Tiền mặt' };
 const APPLY_OPTIONS = [
-  { value: 'category', label: 'Theo danh mục' },
-  { value: 'product', label: 'Theo sản phẩm' },
+  { value: 'timeframe', label: 'Áp dụng theo khung giờ' },
+  { value: 'product', label: 'Áp dụng theo món' },
+  { value: 'category', label: 'Áp dụng theo danh mục' },
 ];
 const CATEGORIES = ['Cà phê', 'Trà', 'Trà sữa', 'Đá xay', 'Nước ép'];
+
+const productOptions = products.map(p => ({ value: p.id, label: p.name }));
+const categoryOptions = CATEGORIES.map(c => ({ value: c, label: c }));
 
 export default function PromotionCreate() {
   const navigate = useNavigate();
@@ -22,7 +29,7 @@ export default function PromotionCreate() {
   const [description, setDescription] = useState('');
   const [type, setType] = useState('percent');
   const [value, setValue] = useState('');
-  const [applyTo, setApplyTo] = useState('category');
+  const [applyTo, setApplyTo] = useState('timeframe');
   const [categoryIds, setCategoryIds] = useState([]);
   const [productIds, setProductIds] = useState([]);
   const [startDate, setStartDate] = useState('');
@@ -33,20 +40,24 @@ export default function PromotionCreate() {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const toggleCategory = (cat) => {
-    setCategoryIds(prev => prev.includes(cat) ? prev.filter(i => i !== cat) : [...prev, cat]);
-  };
-
-  const toggleProduct = (id) => {
-    setProductIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
   const validate = () => {
     const errs = {};
     if (!name.trim()) errs.name = 'Tên chương trình không được để trống';
     if (!value || isNaN(Number(value)) || Number(value) <= 0) errs.value = 'Giá trị khuyến mãi phải lớn hơn 0';
+
+    if (applyTo === 'timeframe') {
+      if (!timeStart) errs.timeStart = 'Vui lòng chọn giờ bắt đầu';
+      if (!timeEnd) errs.timeEnd = 'Vui lòng chọn giờ kết thúc';
+      if (timeStart && timeEnd && timeStart >= timeEnd) errs.timeEnd = 'Giờ kết thúc phải lớn hơn giờ bắt đầu';
+    }
+
+    if (applyTo === 'product' && productIds.length === 0) errs.applyTo = 'Vui lòng chọn ít nhất một món';
     if (applyTo === 'category' && categoryIds.length === 0) errs.applyTo = 'Vui lòng chọn ít nhất một danh mục';
-    if (applyTo === 'product' && productIds.length === 0) errs.applyTo = 'Vui lòng chọn ít nhất một sản phẩm';
+
+    if (!startDate.trim()) errs.startDate = 'Vui lòng chọn ngày bắt đầu';
+    if (!endDate.trim()) errs.endDate = 'Vui lòng chọn ngày kết thúc';
+    if (startDate && endDate && startDate >= endDate) errs.endDate = 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu';
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -128,35 +139,82 @@ export default function PromotionCreate() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1.5">Áp dụng cho</label>
-              <div className="flex items-center gap-3 mb-3">
+              <label className="block text-sm font-semibold mb-1.5">Điều kiện áp dụng</label>
+              <div className="flex items-center gap-3 mb-3 flex-wrap">
                 {APPLY_OPTIONS.map(opt => (
                   <label key={opt.value} className="flex items-center gap-1.5 text-sm cursor-pointer">
                     <input type="radio" name="applyTo" value={opt.value} checked={applyTo === opt.value}
-                      onChange={e => setApplyTo(e.target.value)} />
+                      onChange={e => { setApplyTo(e.target.value); setErrors(p => ({ ...p, applyTo: undefined })); }} />
                     {opt.label}
                   </label>
                 ))}
               </div>
               {errors.applyTo && <p className="text-xs text-danger mb-2">{errors.applyTo}</p>}
-              {applyTo === 'category' && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {CATEGORIES.map(cat => (
-                    <button key={cat} type="button"
-                      className={`px-3 py-1 rounded-lg border text-xs font-semibold transition ${categoryIds.includes(cat) ? 'bg-primary-light border-primary text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
-                      onClick={() => toggleCategory(cat)}
-                    >{cat}</button>
-                  ))}
+
+              {applyTo === 'timeframe' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5">Giờ bắt đầu <span className="text-danger">*</span></label>
+                    <TimePicker value={timeStart} onChange={v => { setTimeStart(v); setErrors(p => ({ ...p, timeStart: undefined })); }} />
+                    {errors.timeStart && <p className="text-xs text-danger mt-1">{errors.timeStart}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5">Giờ kết thúc <span className="text-danger">*</span></label>
+                    <TimePicker value={timeEnd} onChange={v => { setTimeEnd(v); setErrors(p => ({ ...p, timeEnd: undefined })); }} />
+                    {errors.timeEnd && <p className="text-xs text-danger mt-1">{errors.timeEnd}</p>}
+                  </div>
                 </div>
               )}
+
               {applyTo === 'product' && (
-                <div className="flex items-center gap-2 flex-wrap max-h-40 overflow-y-auto">
-                  {products.map(prod => (
-                    <button key={prod.id} type="button"
-                      className={`px-3 py-1 rounded-lg border text-xs font-semibold transition ${productIds.includes(prod.id) ? 'bg-primary-light border-primary text-primary' : 'border-gray-200 text-muted hover-border-primary'}`}
-                      onClick={() => toggleProduct(prod.id)}
-                    >{prod.name}</button>
-                  ))}
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5">Chọn món <span className="text-danger">*</span></label>
+                    <MultiSelect
+                      options={productOptions}
+                      value={productIds}
+                      onChange={v => { setProductIds(v); setErrors(p => ({ ...p, applyTo: undefined })); }}
+                      placeholder="Chọn món..."
+                      searchPlaceholder="Tìm món..."
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1.5">Giờ bắt đầu (không bắt buộc)</label>
+                      <TimePicker value={timeStart} onChange={setTimeStart} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1.5">Giờ kết thúc (không bắt buộc)</label>
+                      <TimePicker value={timeEnd} onChange={setTimeEnd} />
+                    </div>
+                  </div>
+                  {!timeStart && !timeEnd && <p className="text-xs text-muted">Toàn thời gian</p>}
+                </div>
+              )}
+
+              {applyTo === 'category' && (
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5">Chọn danh mục <span className="text-danger">*</span></label>
+                    <MultiSelect
+                      options={categoryOptions}
+                      value={categoryIds}
+                      onChange={v => { setCategoryIds(v); setErrors(p => ({ ...p, applyTo: undefined })); }}
+                      placeholder="Chọn danh mục..."
+                      searchPlaceholder="Tìm danh mục..."
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1.5">Giờ bắt đầu (không bắt buộc)</label>
+                      <TimePicker value={timeStart} onChange={setTimeStart} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1.5">Giờ kết thúc (không bắt buộc)</label>
+                      <TimePicker value={timeEnd} onChange={setTimeEnd} />
+                    </div>
+                  </div>
+                  {!timeStart && !timeEnd && <p className="text-xs text-muted">Toàn thời gian</p>}
                 </div>
               )}
             </div>
@@ -165,24 +223,12 @@ export default function PromotionCreate() {
           <FormSection icon={Calendar} title="THỜI GIAN ÁP DỤNG" className="mb-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Ngày bắt đầu</label>
-                <input type="text" placeholder="DD/MM/YYYY" className="w-full modal-input"
-                  value={startDate} onChange={e => setStartDate(e.target.value)} />
+                <label className="block text-sm font-semibold mb-1.5">Ngày bắt đầu <span className="text-danger">*</span></label>
+                <DatePicker value={startDate} onChange={v => { setStartDate(v); setErrors(p => ({ ...p, startDate: undefined })); }} placeholder="Chọn ngày bắt đầu" allowPast={true} error={errors.startDate} />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Ngày kết thúc</label>
-                <input type="text" placeholder="DD/MM/YYYY" className="w-full modal-input"
-                  value={endDate} onChange={e => setEndDate(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Giờ bắt đầu</label>
-                <input type="text" placeholder="VD: 14:00" className="w-full modal-input"
-                  value={timeStart} onChange={e => setTimeStart(e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Giờ kết thúc</label>
-                <input type="text" placeholder="VD: 17:00" className="w-full modal-input"
-                  value={timeEnd} onChange={e => setTimeEnd(e.target.value)} />
+                <label className="block text-sm font-semibold mb-1.5">Ngày kết thúc <span className="text-danger">*</span></label>
+                <DatePicker value={endDate} onChange={v => { setEndDate(v); setErrors(p => ({ ...p, endDate: undefined })); }} placeholder="Chọn ngày kết thúc" allowPast={true} error={errors.endDate} />
               </div>
             </div>
           </FormSection>
