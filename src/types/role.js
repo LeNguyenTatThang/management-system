@@ -1,92 +1,124 @@
-export const PERMISSION_MODULES = [
+export const PERMISSION_GROUPS = [
   {
     key: 'dashboard',
-    name: 'Dashboard',
-    permissions: [
-      { key: 'view', label: 'Xem' },
+    name: 'Tổng quan',
+    modules: [
+      {
+        key: 'dashboard',
+        name: 'Dashboard',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+        ],
+      },
     ],
   },
   {
-    key: 'orders',
-    name: 'Đơn hàng',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'create', label: 'Thêm' },
-      { key: 'edit', label: 'Sửa' },
-      { key: 'cancel', label: 'Hủy' },
-      { key: 'delete', label: 'Xóa' },
+    key: 'sales',
+    name: 'Quản lý bán hàng',
+    modules: [
+      {
+        key: 'orders',
+        name: 'Đơn hàng',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'create', label: 'Thêm' },
+          { key: 'edit', label: 'Sửa' },
+          { key: 'cancel', label: 'Hủy' },
+          { key: 'delete', label: 'Xóa' },
+        ],
+      },
+      {
+        key: 'products',
+        name: 'Menu Products',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'create', label: 'Thêm' },
+          { key: 'edit', label: 'Sửa' },
+          { key: 'delete', label: 'Xóa' },
+        ],
+      },
     ],
   },
   {
-    key: 'products',
-    name: 'Menu Products',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'create', label: 'Thêm' },
-      { key: 'edit', label: 'Sửa' },
-      { key: 'delete', label: 'Xóa' },
+    key: 'inventory',
+    name: 'Kho & Nguyên liệu',
+    modules: [
+      {
+        key: 'ingredients',
+        name: 'Nguyên liệu',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'import', label: 'Nhập kho' },
+          { key: 'edit', label: 'Sửa' },
+          { key: 'delete', label: 'Xóa' },
+        ],
+      },
+      {
+        key: 'recipes',
+        name: 'Công thức',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'create', label: 'Thêm' },
+          { key: 'edit', label: 'Sửa' },
+          { key: 'delete', label: 'Xóa' },
+        ],
+      },
+      {
+        key: 'suppliers',
+        name: 'Nhà cung cấp',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'create', label: 'Thêm' },
+          { key: 'edit', label: 'Sửa' },
+          { key: 'delete', label: 'Xóa' },
+        ],
+      },
     ],
   },
   {
-    key: 'ingredients',
-    name: 'Nguyên liệu',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'import', label: 'Nhập kho' },
-      { key: 'edit', label: 'Sửa' },
-      { key: 'delete', label: 'Xóa' },
-    ],
-  },
-  {
-    key: 'recipes',
-    name: 'Công thức',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'create', label: 'Thêm' },
-      { key: 'edit', label: 'Sửa' },
-      { key: 'delete', label: 'Xóa' },
-    ],
-  },
-  {
-    key: 'staff',
-    name: 'Nhân viên',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'create', label: 'Thêm' },
-      { key: 'edit', label: 'Sửa' },
-      { key: 'delete', label: 'Xóa' },
-    ],
-  },
-  {
-    key: 'suppliers',
-    name: 'Nhà cung cấp',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'create', label: 'Thêm' },
-      { key: 'edit', label: 'Sửa' },
-      { key: 'delete', label: 'Xóa' },
-    ],
-  },
-  {
-    key: 'accounts',
-    name: 'Tài khoản',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'create', label: 'Thêm' },
-      { key: 'edit', label: 'Sửa' },
-      { key: 'lock', label: 'Khóa' },
-      { key: 'delete', label: 'Xóa' },
+    key: 'hr',
+    name: 'Nhân sự',
+    modules: [
+      {
+        key: 'staff',
+        name: 'Nhân viên',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'create', label: 'Thêm' },
+          { key: 'edit', label: 'Sửa' },
+          { key: 'delete', label: 'Xóa' },
+        ],
+      },
+      {
+        key: 'accounts',
+        name: 'Tài khoản',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'create', label: 'Thêm' },
+          { key: 'edit', label: 'Sửa' },
+          { key: 'lock', label: 'Khóa' },
+          { key: 'delete', label: 'Xóa' },
+        ],
+      },
     ],
   },
   {
     key: 'reports',
     name: 'Báo cáo',
-    permissions: [
-      { key: 'view', label: 'Xem' },
-      { key: 'export', label: 'Xuất' },
+    modules: [
+      {
+        key: 'reports',
+        name: 'Báo cáo',
+        permissions: [
+          { key: 'view', label: 'Xem' },
+          { key: 'export', label: 'Xuất' },
+        ],
+      },
     ],
   },
 ];
+
+export const PERMISSION_MODULES = PERMISSION_GROUPS.flatMap(g => g.modules);
 
 export function buildEmptyPermissions() {
   const perms = {};
