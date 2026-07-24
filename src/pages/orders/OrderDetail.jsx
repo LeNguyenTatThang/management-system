@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coffee } from 'lucide-react';
+import { ArrowLeft, Coffee, Printer } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import ResponsiveTable from '../../components/ui/ResponsiveTable';
 import { mockOrders } from '../../data/mockData';
@@ -72,7 +72,12 @@ export default function OrderDetail() {
               {order.time && <span> · {order.time}</span>}
             </p>
           </div>
-          <span className={`badge ${ps.className} mt-1 flex-shrink-0`}>{ps.label}</span>
+          <div className="flex items-center gap-3 mt-1 flex-shrink-0">
+            <span className={`badge ${ps.className}`}>{ps.label}</span>
+            <button className="btn btn-primary flex items-center gap-1.5 text-sm">
+              <Printer size={16} /> Xuất hóa đơn
+            </button>
+          </div>
         </div>
 
         <div className="card p-6">
