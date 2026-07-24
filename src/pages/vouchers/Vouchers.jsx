@@ -146,6 +146,7 @@ export default function Vouchers() {
                 <th>Loại</th>
                 <th>Giá trị</th>
                 <th className="hidden md:table-cell">Thời hạn</th>
+                <th>Đã dùng</th>
                 <th>Trạng thái</th>
                 <th className="text-right">Thao tác</th>
               </tr>
@@ -157,6 +158,7 @@ export default function Vouchers() {
                   <td><span className="badge badge-neutral">{TYPE_LABELS[v.type]}</span></td>
                   <td className="font-semibold">{v.type === 'fixed' ? fmtPrice(v.value) : `${v.value}%`}</td>
                   <td className="text-sm text-muted hidden md:table-cell whitespace-nowrap">{fmtVoucherDate(v.startDate, false)} - {fmtVoucherDate(v.endDate, true)}</td>
+                  <td className="text-center text-sm">{v.usedCount ?? 0}</td>
                   <td>
                     <button className={`badge ${v.status === 'active' ? 'badge-success' : v.status === 'expired' ? 'badge-warning' : 'badge-danger'}`}
                       onClick={() => toggleStatus(v.id)}>
@@ -172,7 +174,7 @@ export default function Vouchers() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} className="text-center text-muted py-8">Không tìm thấy voucher</td></tr>
+                <tr><td colSpan={7} className="text-center text-muted py-8">Không tìm thấy voucher</td></tr>
               )}
             </tbody>
           </ResponsiveTable>
