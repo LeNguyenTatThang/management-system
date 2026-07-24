@@ -27,6 +27,7 @@ import Orders from './pages/orders/Orders';
 import OrderCreate from './pages/orders/OrderCreate';
 import OrderDetail from './pages/orders/OrderDetail';
 import Staff from './pages/employees/Staff';
+import StaffDetail from './pages/employees/StaffDetail';
 import EmployeeCreate from './pages/employees/EmployeeCreate';
 import Suppliers from './pages/suppliers/Suppliers';
 import SupplierCreate from './pages/suppliers/SupplierCreate';
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route path="ingredients/:id" element={<IngredientDetail />} />
         <Route path="orders" element={<Orders />} />
         <Route path="staff" element={<Staff />} />
+        <Route path="staff/:id" element={<StaffDetail />} />
         <Route path="employees/create" element={<EmployeeCreate />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="suppliers/new" element={<SupplierCreate />} />

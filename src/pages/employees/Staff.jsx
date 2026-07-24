@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useStaff } from '../../contexts/StaffContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { User, Mail, Briefcase, Phone, Calendar, Plus, MapPin, FileText, DollarSign, CreditCard, Trash2 } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Plus, Eye } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 
 const formatDate = (date) => {
@@ -13,13 +12,6 @@ const formatDate = (date) => {
   } catch {
     return 'Chưa cập nhật';
   }
-};
-
-const formatSalary = (salary) => {
-  if (salary === null || salary === undefined || salary === '') return 'Chưa cập nhật';
-  const num = Number(salary);
-  if (isNaN(num)) return 'Chưa cập nhật';
-  return `${new Intl.NumberFormat('vi-VN').format(num)} ₫`;
 };
 
 const getStatusClass = (status) => {
@@ -39,28 +31,9 @@ const getRoleIcon = (role) => {
   return 'bg-gray-100 text-gray-600';
 };
 
-function InfoRow({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-center gap-2 text-sm text-muted min-w-0">
-      <Icon size={14} className="flex-shrink-0" />
-      <span className="truncate">{value || 'Chưa cập nhật'}</span>
-    </div>
-  );
-}
-
-function SectionTitle({ children }) {
-  return <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-2">{children}</h4>;
-}
-
 export default function Staff() {
   const navigate = useNavigate();
-  const { staffList, removeStaff, loading } = useStaff();
-  const { user } = useAuth();
-
-  const handleDelete = (member) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa nhân viên "${member.name}"?`)) return;
-    removeStaff(member.id);
-  };
+  const { staffList, loading } = useStaff();
 
   return (
     <PageContainer>
@@ -88,8 +61,8 @@ export default function Staff() {
         )}
 
         {loading && (
-          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 w-full min-w-0">
-            {[1, 2, 3].map(i => (
+          <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2 w-full min-w-0">
+            {[1, 2].map(i => (
               <div key={i} className="card p-4 min-w-0 animate-pulse">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 rounded-full bg-gray-200" />
@@ -101,7 +74,6 @@ export default function Staff() {
                 <div className="space-y-2">
                   <div className="h-3 bg-gray-200 rounded w-full" />
                   <div className="h-3 bg-gray-200 rounded w-5/6" />
-                  <div className="h-3 bg-gray-200 rounded w-2/3" />
                 </div>
               </div>
             ))}
@@ -109,7 +81,7 @@ export default function Staff() {
         )}
 
         {!loading && staffList.length > 0 && (
-          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 w-full min-w-0">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2 w-full min-w-0">
             {staffList.map(member => {
               const avatarSrc = member.image || member.avatar;
               return (
@@ -131,53 +103,27 @@ export default function Staff() {
                     </span>
                   </div>
 
-                  <div className="p-4 flex flex-col gap-3">
-                    <SectionTitle>THÔNG TIN CÁ NHÂN</SectionTitle>
-                    <div className="flex flex-col gap-2">
-                      <InfoRow icon={Mail} label="Email" value={member.email} />
-                      <InfoRow icon={Phone} label="Số điện thoại" value={member.phone} />
-                      <InfoRow icon={Calendar} label="Ngày sinh" value={formatDate(member.dateOfBirth)} />
-                      <InfoRow icon={User} label="Giới tính" value={member.gender} />
-                      <InfoRow icon={FileText} label="CCCD" value={member.citizenId} />
-                      <InfoRow icon={MapPin} label="Địa chỉ" value={member.address} />
+                  <div className="p-4 flex flex-col gap-2.5">
+                    <div className="flex items-center gap-2 text-sm text-muted min-w-0">
+                      <Mail size={14} className="flex-shrink-0" />
+                      <span className="truncate">{member.email}</span>
                     </div>
-
-                    <hr className="border-t border-gray-100" />
-
-                    <SectionTitle>THÔNG TIN CÔNG VIỆC</SectionTitle>
-                    <div className="flex flex-col gap-2">
-                      <InfoRow icon={Briefcase} label="Chức vụ" value={member.role} />
-                      <InfoRow icon={Calendar} label="Ngày bắt đầu" value={formatDate(member.startDate)} />
+                    <div className="flex items-center gap-2 text-sm text-muted min-w-0">
+                      <Phone size={14} className="flex-shrink-0" />
+                      <span className="truncate">{member.phone || 'Chưa cập nhật'}</span>
                     </div>
-
-                    <hr className="border-t border-gray-100" />
-
-                    <SectionTitle>LƯƠNG &amp; CHẤM CÔNG</SectionTitle>
-                    <div className="flex flex-col gap-2">
-                      <InfoRow icon={CreditCard} label="Hình thức" value={member.salaryType} />
-                      <InfoRow icon={DollarSign} label="Lương" value={formatSalary(member.salary)} />
-                      <InfoRow icon={Calendar} label="Phép tháng" value={member.monthlyLeaveDays != null ? `${member.monthlyLeaveDays} ngày` : 'Chưa cập nhật'} />
-                      <InfoRow icon={Calendar} label="Phép còn lại" value={member.remainingLeaveDays != null ? `${member.remainingLeaveDays} ngày` : 'Chưa cập nhật'} />
+                    <div className="flex items-center gap-2 text-sm text-muted min-w-0">
+                      <Calendar size={14} className="flex-shrink-0" />
+                      <span className="truncate">Bắt đầu: {formatDate(member.startDate)}</span>
                     </div>
-
-                    {member.note && (
-                      <>
-                        <hr className="border-t border-gray-100" />
-                        <div>
-                          <SectionTitle>GHI CHÚ</SectionTitle>
-                          <p className="text-sm text-muted whitespace-pre-wrap line-clamp-2">{member.note}</p>
-                        </div>
-                      </>
-                    )}
                   </div>
 
-                  {member.email !== user?.email && (
-                    <div className="mt-auto p-3 bg-bg border-t flex justify-end">
-                      <button className="flex items-center gap-1.5 text-xs text-danger font-semibold hover:underline" onClick={() => handleDelete(member)}>
-                        <Trash2 size={14} /> Xóa nhân viên
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-auto p-3 bg-bg border-t flex justify-end">
+                    <button className="btn btn-outline flex items-center gap-1.5 text-sm px-4 py-1.5"
+                      onClick={() => navigate(`/staff/${member.id}`)}>
+                      <Eye size={16} /> Xem chi tiết
+                    </button>
+                  </div>
                 </div>
               );
             })}
