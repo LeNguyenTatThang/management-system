@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInventoryExport, EXPORT_TYPES, EXPORT_TYPE_LABELS } from '../../../contexts/InventoryExportContext';
-import { Plus, Search, Eye, Edit3, CheckCircle, XCircle, LogOut, ArrowRightLeft } from 'lucide-react';
+import { Plus, Search, Eye, Edit3, CheckCircle, XCircle, LogOut } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
 import ResponsiveTable from '../../../components/ui/ResponsiveTable';
 import FilterPopover from '../../../components/ui/FilterPopover';
@@ -13,13 +13,6 @@ const STATUS_CONFIG = {
   confirmed: { label: 'Đã xác nhận', color: '#3b82f6', bg: '#eff6ff' },
   exported: { label: 'Đã xuất kho', color: '#10b981', bg: '#ecfdf5' },
   cancelled: { label: 'Đã hủy', color: '#ef4444', bg: '#fef2f2' },
-};
-
-const EXPORT_ICONS = {
-  USE: '📦',
-  DISPOSAL: '🗑️',
-  TRANSFER: '🔄',
-  OTHER: '📋',
 };
 
 export default function ExportReceiptList() {
@@ -165,18 +158,13 @@ export default function ExportReceiptList() {
                   <th>Mã phiếu</th>
                   <th>Ngày xuất</th>
                   <th>Loại xuất</th>
-                  <th className="hidden md:table-cell">Kho xuất</th>
-                  <th className="hidden md:table-cell">Kho nhận</th>
                   <th className="hidden md:table-cell">Số mặt hàng</th>
-                  <th className="hidden md:table-cell">Tổng SL</th>
                   <th className="hidden md:table-cell">Người tạo</th>
-                  <th>Trạng thái</th>
                   <th className="text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(r => {
-                  const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.draft;
                   const typeLabel = EXPORT_TYPE_LABELS[r.exportType] || r.exportType;
                   return (
                     <tr key={r.id} className="cursor-pointer transition hover-bg-primary-light"
@@ -186,23 +174,8 @@ export default function ExportReceiptList() {
                       <td>
                         <span className="badge badge-neutral text-xs">{typeLabel}</span>
                       </td>
-                      <td className="hidden md:table-cell text-sm text-muted">{r.branchName}</td>
-                      <td className="hidden md:table-cell text-sm text-muted">
-                        {r.exportType === 'TRANSFER' && r.toBranchName ? (
-                          <span className="flex items-center gap-1">
-                            <ArrowRightLeft size={12} className="text-primary" />
-                            {r.toBranchName}
-                          </span>
-                        ) : '—'}
-                      </td>
                       <td className="hidden md:table-cell text-sm">{r.totalItems}</td>
-                      <td className="hidden md:table-cell text-sm">{r.totalQuantity}</td>
                       <td className="hidden md:table-cell text-sm text-muted">{r.createdBy}</td>
-                      <td>
-                        <span className="badge font-semibold" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
-                          {cfg.label}
-                        </span>
-                      </td>
                       <td className="text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
@@ -244,7 +217,7 @@ export default function ExportReceiptList() {
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={10} className="text-center text-muted py-8">Không tìm thấy phiếu xuất kho</td></tr>
+                  <tr><td colSpan={6} className="text-center text-muted py-8">Không tìm thấy phiếu xuất kho</td></tr>
                 )}
               </tbody>
             </ResponsiveTable>

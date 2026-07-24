@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInventoryExport, EXPORT_TYPES } from '../../../contexts/InventoryExportContext';
 import { useIngredient } from '../../../contexts/IngredientContext';
-import { ArrowLeft, Calendar, MapPin, FileText, Package, Plus, Trash2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
+import { ArrowLeft, Calendar, FileText, Package, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
 import FormSection from '../../../components/ui/FormSection';
-import DatePicker from '../../../components/ui/DatePicker';
-import { BRANCHES } from '../../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
 
 export default function ExportReceiptCreate() {
@@ -14,10 +12,12 @@ export default function ExportReceiptCreate() {
   const { createExport } = useInventoryExport();
   const { ingredients } = useIngredient();
 
-  const [date, setDate] = useState('');
+  const todayStr = () => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+  const [date] = useState(todayStr());
   const [exportType, setExportType] = useState('USE');
-  const [branchId, setBranchId] = useState('');
-  const [toBranchId, setToBranchId] = useState('');
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [items, setItems] = useState([
@@ -27,10 +27,6 @@ export default function ExportReceiptCreate() {
   const [saving, setSaving] = useState(false);
 
   const activeIngredients = ingredients.filter(i => i.active !== false);
-
-  useEffect(() => {
-    if (date) setErrors(prev => ({ ...prev, date: '' }));
-  }, [date]);
 
   const handleItemChange = (index, field, value) => {
     setItems(prev => {
@@ -84,13 +80,7 @@ export default function ExportReceiptCreate() {
 
   const validate = () => {
     const errs = {};
-    if (!date.trim()) errs.date = 'Vui lòng chọn ngày xuất';
     if (!exportType) errs.exportType = 'Vui lòng chọn loại xuất';
-    if (!branchId) errs.branchId = 'Vui lòng chọn kho xuất';
-    if (exportType === 'TRANSFER') {
-      if (!toBranchId) errs.toBranchId = 'Vui lòng chọn kho nhận';
-      if (toBranchId && toBranchId === branchId) errs.toBranchId = 'Kho nhận không được trùng kho xuất';
-    }
     if ((exportType === 'DISPOSAL' || exportType === 'OTHER') && !reason.trim()) {
       errs.reason = 'Vui lòng nhập lý do';
     }
@@ -125,15 +115,9 @@ export default function ExportReceiptCreate() {
     }
     setSaving(true);
     try {
-      const branch = BRANCHES.find(b => b.id === branchId);
-      const toBranch = BRANCHES.find(b => b.id === toBranchId);
       await createExport({
         date: date.trim(),
         exportType,
-        branchId,
-        branchName: branch?.name || '',
-        toBranchId: exportType === 'TRANSFER' ? toBranchId : '',
-        toBranchName: exportType === 'TRANSFER' ? (toBranch?.name || '') : '',
         reason: reason.trim(),
         note: note.trim(),
         status,
@@ -176,36 +160,17 @@ export default function ExportReceiptCreate() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold mb-1.5">Ngày xuất <span className="text-danger">*</span></label>
-              <DatePicker value={date} onChange={setDate} placeholder="Chọn ngày xuất" error={errors.date} />
+              <input type="text" className="w-full modal-input bg-gray-50 text-sm text-muted cursor-not-allowed"
+                value={date} readOnly disabled />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1.5">Loại xuất <span className="text-danger">*</span></label>
               <select className={`w-full modal-input ${errors.exportType ? 'border-danger' : ''}`}
-                value={exportType} onChange={e => { setExportType(e.target.value); setToBranchId(''); setReason(''); }}>
+                value={exportType} onChange={e => { setExportType(e.target.value); setReason(''); }}>
                 {EXPORT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
               {errors.exportType && <p className="text-xs text-danger mt-1">{errors.exportType}</p>}
             </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1.5">Kho xuất <span className="text-danger">*</span></label>
-              <select className={`w-full modal-input ${errors.branchId ? 'border-danger' : ''}`}
-                value={branchId} onChange={e => setBranchId(e.target.value)}>
-                <option value="">-- Chọn kho xuất --</option>
-                {BRANCHES.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-              {errors.branchId && <p className="text-xs text-danger mt-1">{errors.branchId}</p>}
-            </div>
-            {exportType === 'TRANSFER' && (
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Kho nhận <span className="text-danger">*</span></label>
-                <select className={`w-full modal-input ${errors.toBranchId ? 'border-danger' : ''}`}
-                  value={toBranchId} onChange={e => setToBranchId(e.target.value)}>
-                  <option value="">-- Chọn kho nhận --</option>
-                  {BRANCHES.filter(b => b.id !== branchId).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-                {errors.toBranchId && <p className="text-xs text-danger mt-1">{errors.toBranchId}</p>}
-              </div>
-            )}
             {(exportType === 'DISPOSAL' || exportType === 'OTHER') && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold mb-1.5">Lý do <span className="text-danger">*</span></label>
@@ -230,7 +195,7 @@ export default function ExportReceiptCreate() {
               <thead>
                 <tr className="text-xs font-semibold text-muted">
                   <th className="text-left p-2" style={{ width: '25%' }}>Nguyên liệu</th>
-                  <th className="text-left p-2" style={{ width: '7%' }}>ĐVT</th>
+                  <th className="text-left p-2" style={{ width: '10%' }}>ĐVT</th>
                   <th className="text-left p-2" style={{ width: '12%' }}>Tồn kho</th>
                   <th className="text-left p-2" style={{ width: '14%' }}>SL xuất</th>
                   <th className="text-left p-2" style={{ width: '17%' }}>Ghi chú</th>
@@ -254,7 +219,13 @@ export default function ExportReceiptCreate() {
                         </select>
                       </td>
                       <td className="p-1">
-                        <input type="text" className="w-full modal-input text-sm bg-gray-50 text-muted text-center" value={item.unit} readOnly />
+                        <select className="w-full modal-input text-sm"
+                          value={item.unit} onChange={e => handleItemChange(i, 'unit', e.target.value)}>
+                          <option value="">-- ĐVT --</option>
+                          {[...new Set(activeIngredients.map(ing => ing.unit).filter(Boolean))].sort().map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="p-1">
                         <input type="text" className="w-full modal-input text-sm bg-gray-50 text-muted text-center"

@@ -148,7 +148,7 @@ export function InventoryExportProvider({ children }) {
       code: generateCode(index),
       date: data.date || todayStr(),
       exportType: data.exportType || 'USE',
-      branchId: data.branchId,
+      branchId: data.branchId || '',
       branchName: data.branchName || '',
       toBranchId: data.toBranchId || '',
       toBranchName: data.toBranchName || '',
