@@ -1,6 +1,6 @@
 # DEZ LAB - Coffee Shop Management System
 
-A frontend-only management system for cafe / beverage shops built with React. Manage products, ingredients, recipes, orders, staff, and suppliers — all powered by mock data and local state.
+A frontend-only management system for cafe / beverage shops built with React. Manage products, ingredients, recipes, orders, staff, roles, vouchers, promotions, inventory, and suppliers — all powered by mock data and local state.
 
 ## Features
 
@@ -8,10 +8,17 @@ A frontend-only management system for cafe / beverage shops built with React. Ma
 - **Menu Products** — CRUD for menu items with card/list views
 - **Recipes** — Structured ingredient quantities per product (Công thức / Định lượng)
 - **Ingredients** — Manage stock ingredients and units
-- **Orders** — View and track customer orders
-- **POS** — Full-screen point-of-sale interface
-- **Staff** — Employee management
+- **Orders** — View, create, and track customer orders with detail page
+- **POS** — Full-screen point-of-sale interface with multi-voucher support
+- **Staff** — Employee management with personal, job, and salary info
+- **Roles** — Role & permission management with hierarchical permission tree
+- **Vouchers** — Voucher/discount code management
+- **Promotions** — Promotion program management
+- **Inventory** — Import/Export stock management
+- **Schedules** — Staff work schedules
+- **Attendance** — Staff attendance tracking
 - **Suppliers** — Supplier management
+- **Themes** — Theme management
 - **Authentication** — Login & Register pages (local state)
 
 ## Tech Stack
@@ -49,11 +56,19 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 src/
 ├── assets/            # Static images
 ├── components/
-│   ├── layout/        # AdminLayout, Sidebar, Topbar, PageContainer
-│   └── ui/            # Reusable UI components (ResponsiveTable)
-├── contexts/          # React context providers (Auth, Ingredients, etc.)
+│   ├── layout/        # AdminLayout, Sidebar, Topbar, PageContainer, PosLayout
+│   ├── ui/            # Reusable UI components (ResponsiveTable, FormSection, etc.)
+│   └── pos/           # POS-specific components (PosLayout)
+├── contexts/          # React context providers (Auth, Staff, Ingredients, etc.)
 ├── data/              # Mock data
 ├── pages/             # Route-level page components
+│   ├── employees/     # Staff, EmployeeCreate
+│   ├── ingredients/   # Ingredients, IngredientCreate, IngredientDetail
+│   ├── orders/        # Orders, OrderCreate, OrderDetail
+│   ├── vouchers/      # Vouchers, VoucherCreate
+│   ├── roles/         # RoleCreate
+│   └── ...
+├── types/             # Permission types and constants
 ├── App.jsx            # Root component with routes
 ├── index.css          # Global styles
 └── main.jsx           # Entry point
@@ -61,19 +76,36 @@ src/
 
 ## Routes
 
-| Path          | Page            |
-| ------------- | --------------- |
-| `/`           | Redirects to `/login` or `/dashboard` |
-| `/login`      | Login           |
-| `/register`   | Register        |
-| `/dashboard`  | Dashboard       |
-| `/products`   | Menu Products   |
-| `/recipes`    | Recipes         |
-| `/ingredients`| Ingredients     |
-| `/orders`     | Orders          |
-| `/pos`        | POS             |
-| `/staff`      | Staff           |
-| `/suppliers`  | Suppliers       |
+| Path                    | Page                  |
+| ----------------------- | --------------------- |
+| `/`                     | Redirects to `/login` or `/dashboard` |
+| `/login`                | Login                 |
+| `/register`             | Register              |
+| `/dashboard`            | Dashboard             |
+| `/staff`                | Staff                 |
+| `/employees/create`     | Add Employee          |
+| `/schedules`            | Work Schedules        |
+| `/attendance`           | Attendance            |
+| `/accounts/roles`       | Role Management       |
+| `/accounts`             | Account Management    |
+| `/themes`               | Theme Management      |
+| `/vouchers`             | Vouchers              |
+| `/vouchers/create`      | Add Voucher           |
+| `/promotions`           | Promotions            |
+| `/orders`               | Orders                |
+| `/orders/create`        | Create Order          |
+| `/orders/:id`           | Order Detail          |
+| `/pos`                  | POS                   |
+| `/products`             | Menu Products         |
+| `/products/create`      | Add Product           |
+| `/recipes`              | Recipes               |
+| `/recipes/new`          | Add Recipe            |
+| `/ingredients`          | Ingredients           |
+| `/ingredients/create`   | Add Ingredient        |
+| `/ingredients/:id`      | Ingredient Detail     |
+| `/inventory/imports`    | Stock Import          |
+| `/inventory/exports`    | Stock Export          |
+| `/suppliers`            | Suppliers             |
 
 ## Design
 
