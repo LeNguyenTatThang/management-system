@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSchedule } from '../../contexts/ScheduleContext';
 import { useStaff } from '../../contexts/StaffContext';
-import { ArrowLeft, Calendar, MapPin, Clock, Users, FileText, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, FileText, Clock } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import FormSection from '../../components/ui/FormSection';
 import DatePicker from '../../components/ui/DatePicker';
-import { SHIFT_DURATIONS, SHIFT_TYPES, BRANCHES, getAvailableStartTimes, calcEndTime } from '../../utils/shiftConfig';
+import { SHIFT_TYPES, BRANCHES } from '../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
 
 export default function ScheduleEdit() {
@@ -18,8 +18,6 @@ export default function ScheduleEdit() {
   const [date, setDate] = useState('');
   const [branchId, setBranchId] = useState('');
   const [shiftType, setShiftType] = useState('morning');
-  const [duration, setDuration] = useState(8);
-  const [startTime, setStartTime] = useState('');
   const [employeeIds, setEmployeeIds] = useState([]);
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [note, setNote] = useState('');
@@ -37,8 +35,6 @@ export default function ScheduleEdit() {
     setDate(s.date);
     setBranchId(s.branchId);
     setShiftType(s.shiftType);
-    setDuration(s.duration);
-    setStartTime(s.startTime);
     setEmployeeIds(s.employeeIds || []);
     setNote(s.note || '');
     setLoaded(true);
@@ -47,9 +43,6 @@ export default function ScheduleEdit() {
   useEffect(() => {
     if (date) setErrors(prev => ({ ...prev, date: '' }));
   }, [date]);
-
-  const startTimes = getAvailableStartTimes(duration);
-  const endTime = startTime ? calcEndTime(startTime, duration) : '';
 
   const toggleEmployee = (id) => {
     setEmployeeIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -64,16 +57,15 @@ export default function ScheduleEdit() {
     const errs = {};
     if (!date.trim()) errs.date = 'Vui lòng chọn ngày làm việc';
     if (!branchId) errs.branchId = 'Vui lòng chọn chi nhánh';
-    if (!startTime) errs.startTime = 'Vui lòng chọn giờ bắt đầu';
     if (employeeIds.length === 0) errs.employeeIds = 'Vui lòng chọn ít nhất 1 nhân viên';
 
-    if (date && startTime && endTime && employeeIds.length > 0) {
+    if (date && employeeIds.length > 0) {
       const conflicts = [];
       employeeIds.forEach(eid => {
         const emp = staffList.find(s => s.id === eid);
-        const clash = checkConflict(eid, date, startTime, endTime, id);
+        const clash = checkConflict(eid, date, shiftType, id);
         if (clash.length > 0) {
-          conflicts.push(`${emp?.name || eid}: ${clash.map(c => `${c.startTime}-${c.endTime}`).join(', ')}`);
+          conflicts.push(`${emp?.name || eid}: đã có lịch ca này`);
         }
       });
       if (conflicts.length > 0) {
@@ -100,9 +92,6 @@ export default function ScheduleEdit() {
         branchId,
         branchName: branch?.name || branchId,
         shiftType,
-        duration,
-        startTime,
-        endTime,
         employeeIds,
         employees: employeesData,
         note: note.trim(),
@@ -119,15 +108,17 @@ export default function ScheduleEdit() {
   return (
     <PageContainer>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-2 text-sm text-muted mb-1">
-          <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/schedules')}>QL Lịch Làm Việc</button>
-          <span>&gt;</span>
-          <span className="text-main font-semibold">Sửa</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/schedules')}>QL Lịch Làm Việc</button>
+            <span>&gt;</span>
+            <span className="text-main font-semibold">Sửa</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
+            onClick={() => navigate(`/schedules/${id}`)}>
+            <ArrowLeft size={16} /> Quay lại
+          </button>
         </div>
-        <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary mb-6 cursor-pointer"
-          onClick={() => navigate(`/schedules/${id}`)}>
-          <ArrowLeft size={16} /> Quay lại
-        </button>
 
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Sửa lịch làm việc</h1>
@@ -151,29 +142,13 @@ export default function ScheduleEdit() {
                 {errors.branchId && <p className="text-xs text-danger mt-1">{errors.branchId}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Loại ca</label>
-                <select className="w-full modal-input" value={shiftType} onChange={e => setShiftType(e.target.value)}>
-                  {SHIFT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Thời lượng <span className="text-danger">*</span></label>
-                <select className="w-full modal-input" value={duration} onChange={e => { setDuration(Number(e.target.value)); setStartTime(''); }}>
-                  {SHIFT_DURATIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Giờ bắt đầu <span className="text-danger">*</span></label>
-                <select className={`w-full modal-input ${errors.startTime ? 'border-danger' : ''}`}
-                  value={startTime} onChange={e => setStartTime(e.target.value)}>
-                  <option value="">-- Chọn giờ --</option>
-                  {startTimes.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-                {errors.startTime && <p className="text-xs text-danger mt-1">{errors.startTime}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Giờ kết thúc</label>
-                <input type="text" className="w-full modal-input bg-gray-50 text-muted" value={endTime} readOnly />
+                <label className="block text-sm font-semibold mb-1.5">Ca làm việc <span className="text-danger">*</span></label>
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-muted flex-shrink-0" />
+                  <select className="w-full modal-input" value={shiftType} onChange={e => setShiftType(e.target.value)}>
+                    {SHIFT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
           </FormSection>
@@ -182,8 +157,7 @@ export default function ScheduleEdit() {
             {errors.employeeIds && <p className="text-xs text-danger mb-2">{errors.employeeIds}</p>}
             {errors.conflict && (
               <div className="flex items-start gap-2 p-3 bg-danger-light rounded-lg mb-3">
-                <AlertTriangle size={16} className="text-danger flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-danger whitespace-pre-line">{errors.conflict}</div>
+                <span className="text-xs text-danger whitespace-pre-line">{errors.conflict}</span>
               </div>
             )}
             <input type="text" placeholder="Tìm nhân viên..." className="w-full modal-input mb-3"

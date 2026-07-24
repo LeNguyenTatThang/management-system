@@ -40,7 +40,7 @@ export default function ScheduleDetail() {
   const branchName = BRANCHES.find(b => b.id === schedule.branchId)?.name || schedule.branchName;
 
   const handleDelete = () => {
-    if (window.confirm(`Xóa ca làm việc ngày ${schedule.date} (${schedule.startTime}-${schedule.endTime})?`)) {
+    if (window.confirm(`Xóa ca làm việc ngày ${schedule.date} (${SHIFT_LABELS[schedule.shiftType] || schedule.shiftType})?`)) {
       deleteSchedule(schedule.id);
       toast.success('Đã xóa ca làm việc');
       navigate('/schedules');
@@ -70,20 +70,22 @@ export default function ScheduleDetail() {
   return (
     <PageContainer>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-2 text-sm text-muted mb-1">
-          <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/schedules')}>QL Lịch Làm Việc</button>
-          <span>&gt;</span>
-          <span className="text-main font-semibold">Chi tiết</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/schedules')}>QL Lịch Làm Việc</button>
+            <span>&gt;</span>
+            <span className="text-main font-semibold">Chi tiết</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
+            onClick={() => navigate('/schedules')}>
+            <ArrowLeft size={16} /> Quay lại
+          </button>
         </div>
-        <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary mb-6 cursor-pointer"
-          onClick={() => navigate('/schedules')}>
-          <ArrowLeft size={16} /> Quay lại
-        </button>
 
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Chi tiết ca làm việc</h1>
-            <p className="text-muted text-sm mt-1">{schedule.date} &middot; {schedule.startTime} - {schedule.endTime}</p>
+            <p className="text-muted text-sm mt-1">{schedule.date} &middot; {SHIFT_LABELS[schedule.shiftType] || schedule.shiftType}</p>
           </div>
           <span className={`badge mt-2 ${STATUS_BADGE[schedule.status] || 'badge-neutral'}`}>
             {STATUS_LABELS[schedule.status] || schedule.status}
@@ -94,8 +96,7 @@ export default function ScheduleDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <InfoRow icon={Calendar} label="Ngày làm việc" value={schedule.date} />
             <InfoRow icon={MapPin} label="Chi nhánh" value={branchName} />
-            <InfoRow icon={Clock} label="Thời gian" value={`${schedule.startTime} - ${schedule.endTime} (${schedule.duration}h)`} />
-            <InfoRow icon={Clock} label="Loại ca" value={SHIFT_LABELS[schedule.shiftType] || schedule.shiftType} />
+            <InfoRow icon={Clock} label="Ca làm việc" value={SHIFT_LABELS[schedule.shiftType] || schedule.shiftType} />
           </div>
         </div>
 

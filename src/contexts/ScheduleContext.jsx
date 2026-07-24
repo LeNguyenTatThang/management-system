@@ -49,11 +49,11 @@ export function ScheduleProvider({ children }) {
     return schedules.find(s => s.id === id) || null;
   }, [schedules]);
 
-  const checkConflict = useCallback((employeeId, date, startTime, endTime, excludeId) => {
+  const checkConflict = useCallback((employeeId, date, shiftType, excludeId) => {
     return schedules.filter(s => {
       if (s.id === excludeId) return false;
       if (s.status === 'cancelled') return false;
-      return s.employeeIds.includes(employeeId) && s.date === date && s.startTime < endTime && s.endTime > startTime;
+      return s.employeeIds.includes(employeeId) && s.date === date && s.shiftType === shiftType;
     });
   }, [schedules]);
 

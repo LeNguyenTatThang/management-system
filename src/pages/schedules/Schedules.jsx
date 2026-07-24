@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSchedule } from '../../contexts/ScheduleContext';
+import { useAttendance } from '../../contexts/AttendanceContext';
 import { Plus, Search, ChevronLeft, ChevronRight, LayoutGrid, List as ListIcon } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import ResponsiveTable from '../../components/ui/ResponsiveTable';
@@ -27,6 +28,7 @@ const fmtTime = (t) => t || '';
 export default function Schedules() {
   const navigate = useNavigate();
   const { schedules, deleteSchedule } = useSchedule();
+  const { getRecordsByDateRange } = useAttendance();
 
   const [viewMode, setViewMode] = useState('calendar');
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,6 +41,11 @@ export default function Schedules() {
   const refDate = new Date(today);
   refDate.setDate(refDate.getDate() + weekOffset * 7);
   const weekDates = useMemo(() => getWeekDates(refDate), [refDate]);
+
+  const weekAttendance = useMemo(() => {
+    if (weekDates.length < 2) return [];
+    return getRecordsByDateRange(weekDates[0].date, weekDates[6].date);
+  }, [weekDates, getRecordsByDateRange]);
 
   const filtered = useMemo(() => {
     return schedules.filter(s => {
@@ -58,7 +65,7 @@ export default function Schedules() {
   const handleDelete = (id) => {
     const s = schedules.find(x => x.id === id);
     if (!s) return;
-    if (window.confirm(`Xóa ca làm việc ngày ${s.date} (${s.startTime}-${s.endTime})?`)) {
+    if (window.confirm(`Xóa ca làm việc ngày ${s.date} (${SHIFT_LABELS[s.shiftType] || s.shiftType})?`)) {
       deleteSchedule(id);
       toast.success('Đã xóa ca làm việc');
     }
@@ -152,6 +159,7 @@ export default function Schedules() {
           <ScheduleCalendar
             weekDates={weekDates}
             schedules={weekSchedules}
+            attendanceRecords={weekAttendance}
             onScheduleClick={(s) => navigate(`/schedules/${s.id}`)}
             onEdit={(s) => navigate(`/schedules/${s.id}/edit`)}
             onDelete={handleDelete}
@@ -164,10 +172,8 @@ export default function Schedules() {
                   <tr>
                     <th>Ngày</th>
                     <th>Nhân viên</th>
-                    <th>Thời gian</th>
-                    <th>Loại ca</th>
+                    <th>Ca</th>
                     <th className="hidden md:table-cell">Chi nhánh</th>
-                    <th className="hidden md:table-cell">Thời lượng</th>
                     <th>Trạng thái</th>
                     <th className="text-right">Thao tác</th>
                   </tr>
@@ -182,10 +188,8 @@ export default function Schedules() {
                           {s.employees?.map(e => e.name).join(', ')}
                         </div>
                       </td>
-                      <td className="whitespace-nowrap">{s.startTime} - {s.endTime}</td>
                       <td><span className="badge badge-neutral">{SHIFT_LABELS[s.shiftType] || s.shiftType}</span></td>
                       <td className="hidden md:table-cell text-sm text-muted">{BRANCH_LABELS[s.branchId] || s.branchName}</td>
-                      <td className="hidden md:table-cell text-sm">{s.duration}h</td>
                       <td>
                         <span className={`badge ${s.status === 'scheduled' ? 'badge-info' : s.status === 'in_progress' ? 'badge-warning' : s.status === 'completed' ? 'badge-success' : 'badge-danger'}`}>
                           {STATUS_LABELS[s.status] || s.status}
@@ -206,7 +210,7 @@ export default function Schedules() {
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={8} className="text-center text-muted py-8">Không tìm thấy lịch làm việc</td></tr>
+                    <tr><td colSpan={6} className="text-center text-muted py-8">Không tìm thấy lịch làm việc</td></tr>
                   )}
                 </tbody>
               </ResponsiveTable>
