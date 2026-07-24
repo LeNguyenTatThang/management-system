@@ -10,8 +10,7 @@ export default function RoleTable({
   filterStatus,
 }) {
   const filtered = roles.filter(r => {
-    const matchSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = !filterStatus || r.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -36,7 +35,6 @@ export default function RoleTable({
           <tr>
             <th className="w-12 text-center">STT</th>
             <th>Tên vai trò</th>
-            <th className="hidden md:table-cell">Mô tả</th>
             <th className="text-center">Số tài khoản</th>
             <th>Trạng thái</th>
             <th className="text-right">Thao tác</th>
@@ -49,21 +47,12 @@ export default function RoleTable({
               <tr key={role.id}>
                 <td className="text-center text-muted text-sm">{idx + 1}</td>
                 <td>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
-                      <Shield size={16} className="text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-sm truncate flex items-center gap-2">
-                        {role.name}
-                        {role.system && (
-                          <span className="badge badge-neutral text-xs">Hệ thống</span>
-                        )}
-                      </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm truncate">
+                      {role.name}
                     </div>
                   </div>
                 </td>
-                <td className="text-sm text-muted hidden md:table-cell max-w-200px truncate">{role.description}</td>
                 <td className="text-center">
                   <div className="flex items-center justify-center gap-1 text-sm">
                     <Users size={14} className="text-muted" />

@@ -87,7 +87,7 @@ export default function Roles() {
             <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
             <input
               type="text"
-              placeholder="Tìm theo tên hoặc mô tả..."
+              placeholder="Tìm theo tên vai trò..."
               className="w-full pl-10 h-36px"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}

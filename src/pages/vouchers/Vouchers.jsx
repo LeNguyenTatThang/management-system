@@ -21,6 +21,12 @@ function fmtPrice(n) {
   return Number(n).toLocaleString('vi-VN') + 'đ';
 }
 
+function fmtVoucherDate(dateStr, isEnd) {
+  if (!dateStr) return '—';
+  if (dateStr.includes(' ')) return dateStr;
+  return isEnd ? `${dateStr} 23:59` : `${dateStr} 00:00`;
+}
+
 export default function Vouchers() {
   const navigate = useNavigate();
   const [vouchers, setVouchers] = useState(mockVouchers);
@@ -34,7 +40,7 @@ export default function Vouchers() {
   const handleChange = key => e => setForm(p => ({ ...p, [key]: e.target.value }));
 
   const filtered = vouchers.filter(v => {
-    const matchSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = v.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = !filterStatus || v.status === filterStatus;
     const matchType = !filterType || v.type === filterType;
     return matchSearch && matchStatus && matchType;
@@ -47,9 +53,9 @@ export default function Vouchers() {
   const openEdit = (item) => {
     setEditItem(item);
     setForm({
-      code: item.code, name: item.name, description: item.description || '',
+      code: item.code, description: item.description || '',
       type: item.type, value: String(item.value),
-      minOrder: String(item.minOrder || ''), maxDiscount: String(item.maxDiscount || ''),
+      maxDiscount: String(item.maxDiscount || ''),
       startDate: item.startDate, endDate: item.endDate,
       usageLimit: String(item.usageLimit || ''), status: item.status
     });
@@ -57,11 +63,10 @@ export default function Vouchers() {
   };
 
   const handleSave = () => {
-    if (!form.code || !form.name || !form.value) return;
+    if (!form.code || !form.description || !form.value) return;
     const payload = {
       ...form,
       value: Number(form.value),
-      minOrder: form.minOrder ? Number(form.minOrder) : 0,
       maxDiscount: form.maxDiscount ? Number(form.maxDiscount) : null,
       usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
     };
@@ -134,15 +139,12 @@ export default function Vouchers() {
         </div>
 
         <div className="card p-0 overflow-hidden min-w-0">
-          <div className="overflow-x-auto">
           <ResponsiveTable>
             <thead>
               <tr>
                 <th>Mã</th>
-                <th>Tên voucher</th>
                 <th>Loại</th>
                 <th>Giá trị</th>
-                <th>Đơn tối thiểu</th>
                 <th className="hidden md:table-cell">Thời hạn</th>
                 <th className="hidden md:table-cell">Đã dùng</th>
                 <th>Trạng thái</th>
@@ -153,11 +155,9 @@ export default function Vouchers() {
               {filtered.map(v => (
                 <tr key={v.id}>
                   <td className="font-semibold text-primary">{v.code}</td>
-                  <td>{v.name}</td>
                   <td><span className="badge badge-neutral">{TYPE_LABELS[v.type]}</span></td>
                   <td className="font-semibold">{v.type === 'fixed' ? fmtPrice(v.value) : `${v.value}%`}</td>
-                  <td>{v.minOrder > 0 ? fmtPrice(v.minOrder) : '—'}</td>
-                  <td className="text-sm text-muted hidden md:table-cell whitespace-nowrap">{v.startDate} - {v.endDate}</td>
+                  <td className="text-sm text-muted hidden md:table-cell whitespace-nowrap">{fmtVoucherDate(v.startDate, false)} - {fmtVoucherDate(v.endDate, true)}</td>
                   <td className="text-sm hidden md:table-cell">{v.usedCount}/{v.usageLimit || '∞'}</td>
                   <td>
                     <button className={`badge ${v.status === 'active' ? 'badge-success' : v.status === 'expired' ? 'badge-warning' : 'badge-danger'}`}
@@ -174,11 +174,10 @@ export default function Vouchers() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9} className="text-center text-muted py-8">Không tìm thấy voucher</td></tr>
+                <tr><td colSpan={7} className="text-center text-muted py-8">Không tìm thấy voucher</td></tr>
               )}
             </tbody>
           </ResponsiveTable>
-          </div>
         </div>
       </div>
 
@@ -190,14 +189,10 @@ export default function Vouchers() {
               <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={() => setShowModal(false)}>×</button>
             </div>
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="block text-sm font-semibold mb-1">Mã voucher <span className="text-danger">*</span></label>
                   <input type="text" placeholder="VD: SALE10" className="w-full modal-input uppercase" value={form.code} onChange={handleChange('code')} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Tên voucher <span className="text-danger">*</span></label>
-                  <input type="text" placeholder="Tên voucher" className="w-full modal-input" value={form.name} onChange={handleChange('name')} />
                 </div>
               </div>
               <FormTextarea label="Mô tả" placeholder="Mô tả voucher..." value={form.description} onChange={handleChange('description')} rows={2} />
@@ -214,10 +209,6 @@ export default function Vouchers() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Đơn tối thiểu</label>
-                  <input type="number" placeholder="0" className="w-full modal-input" value={form.minOrder} onChange={handleChange('minOrder')} />
-                </div>
                 {form.type === 'percent' && (
                   <div>
                     <label className="block text-sm font-semibold mb-1">Giảm tối đa</label>

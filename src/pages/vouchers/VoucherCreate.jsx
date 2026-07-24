@@ -10,31 +10,39 @@ import { toast } from 'react-hot-toast';
 const TYPES = ['fixed', 'percent'];
 const TYPE_LABELS = { fixed: 'Tiền mặt', percent: '%' };
 
+const defaultForm = {
+  code: '', description: '', type: 'fixed', value: '',
+  maxDiscount: '', startDate: '', endDate: '',
+  usageLimit: '', status: 'active'
+};
+
+function fmtPrice(n) {
+  return Number(n).toLocaleString('vi-VN') + 'đ';
+}
+
+function fmtVoucherDate(dateStr, isEnd) {
+  if (!dateStr) return '—';
+  if (dateStr.includes(' ')) return dateStr;
+  return isEnd ? `${dateStr} 23:59` : `${dateStr} 00:00`;
+}
+
 export default function VoucherCreate() {
   const navigate = useNavigate();
 
-  const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState('fixed');
-  const [value, setValue] = useState('');
-  const [minOrder, setMinOrder] = useState('');
-  const [maxDiscount, setMaxDiscount] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [usageLimit, setUsageLimit] = useState('');
-  const [status, setStatus] = useState('active');
+  const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
+  const handleChange = (key) => (e) => {
+    setForm(prev => ({ ...prev, [key]: e.target.value }));
+  };
+
   const validate = () => {
     const errs = {};
-    if (!code.trim()) errs.code = 'Mã voucher không được để trống';
-    if (!name.trim()) errs.name = 'Tên voucher không được để trống';
-    if (!value || isNaN(Number(value)) || Number(value) <= 0) errs.value = 'Giá trị giảm phải lớn hơn 0';
-    if (minOrder !== '' && (isNaN(Number(minOrder)) || Number(minOrder) < 0)) errs.minOrder = 'Đơn tối thiểu không được âm';
-    if (maxDiscount !== '' && (isNaN(Number(maxDiscount)) || Number(maxDiscount) < 0)) errs.maxDiscount = 'Giảm tối đa không được âm';
-    if (usageLimit !== '' && (isNaN(Number(usageLimit)) || Number(usageLimit) < 0)) errs.usageLimit = 'Giới hạn lượt không được âm';
+    if (!form.code.trim()) errs.code = 'Mã voucher không được để trống';
+    if (!form.value || isNaN(Number(form.value)) || Number(form.value) <= 0) errs.value = 'Giá trị giảm phải lớn hơn 0';
+    if (form.maxDiscount !== '' && (isNaN(Number(form.maxDiscount)) || Number(form.maxDiscount) < 0)) errs.maxDiscount = 'Giảm tối đa không được âm';
+    if (form.usageLimit !== '' && (isNaN(Number(form.usageLimit)) || Number(form.usageLimit) < 0)) errs.usageLimit = 'Giới hạn lượt không được âm';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -47,17 +55,15 @@ export default function VoucherCreate() {
       const voucherList = mockVouchers;
       const newItem = {
         id: `VC${String(voucherList.length + 1).padStart(2, '0')}`,
-        code: code.trim(),
-        name: name.trim(),
-        description,
-        type,
-        value: Number(value),
-        minOrder: minOrder ? Number(minOrder) : 0,
-        maxDiscount: maxDiscount ? Number(maxDiscount) : null,
-        startDate,
-        endDate,
-        usageLimit: usageLimit ? Number(usageLimit) : null,
-        status,
+        code: form.code.trim(),
+        description: form.description,
+        type: form.type,
+        value: Number(form.value),
+        maxDiscount: form.maxDiscount ? Number(form.maxDiscount) : null,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
+        status: form.status,
         usedCount: 0,
       };
       mockVouchers.push(newItem);
@@ -88,23 +94,17 @@ export default function VoucherCreate() {
 
         <form onSubmit={handleSubmit}>
           <FormSection icon={Tag} title="THÔNG TIN VOUCHER" className="mb-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-5">
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Mã voucher <span className="text-danger">*</span></label>
                 <input type="text" placeholder="VD: SALE10" className={`w-full modal-input uppercase ${errors.code ? 'border-danger' : ''}`}
-                  value={code} onChange={e => setCode(e.target.value)} />
+                  value={form.code} onChange={handleChange('code')} />
                 {errors.code && <p className="text-xs text-danger mt-1">{errors.code}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Tên voucher <span className="text-danger">*</span></label>
-                <input type="text" placeholder="Tên voucher" className={`w-full modal-input ${errors.name ? 'border-danger' : ''}`}
-                  value={name} onChange={e => setName(e.target.value)} />
-                {errors.name && <p className="text-xs text-danger mt-1">{errors.name}</p>}
               </div>
             </div>
             <div>
               <FormTextarea label="Mô tả" placeholder="Mô tả voucher..." rows={2}
-                value={description} onChange={e => setDescription(e.target.value)} />
+                value={form.description} onChange={handleChange('description')} />
             </div>
           </FormSection>
 
@@ -112,28 +112,22 @@ export default function VoucherCreate() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Loại giảm giá <span className="text-danger">*</span></label>
-                <select className="w-full modal-input" value={type} onChange={e => setType(e.target.value)}>
+                <select className="w-full modal-input" value={form.type} onChange={handleChange('type')}>
                   {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Giá trị giảm <span className="text-danger">*</span></label>
-                <input type="number" placeholder={type === 'fixed' ? 'Số tiền' : 'Phần trăm'}
+                <input type="number" placeholder={form.type === 'fixed' ? 'Số tiền' : 'Phần trăm'}
                   className={`w-full modal-input ${errors.value ? 'border-danger' : ''}`}
-                  value={value} onChange={e => setValue(e.target.value)} />
+                  value={form.value} onChange={handleChange('value')} />
                 {errors.value && <p className="text-xs text-danger mt-1">{errors.value}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Đơn tối thiểu</label>
-                <input type="number" placeholder="0" className={`w-full modal-input ${errors.minOrder ? 'border-danger' : ''}`}
-                  value={minOrder} onChange={e => setMinOrder(e.target.value)} />
-                {errors.minOrder && <p className="text-xs text-danger mt-1">{errors.minOrder}</p>}
-              </div>
-              {type === 'percent' && (
-                <div>
+              {form.type === 'percent' && (
+                <div className="md:col-span-2">
                   <label className="block text-sm font-semibold mb-1.5">Giảm tối đa</label>
                   <input type="number" placeholder="Không giới hạn" className={`w-full modal-input ${errors.maxDiscount ? 'border-danger' : ''}`}
-                    value={maxDiscount} onChange={e => setMaxDiscount(e.target.value)} />
+                    value={form.maxDiscount} onChange={handleChange('maxDiscount')} />
                   {errors.maxDiscount && <p className="text-xs text-danger mt-1">{errors.maxDiscount}</p>}
                 </div>
               )}
@@ -145,12 +139,12 @@ export default function VoucherCreate() {
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Ngày bắt đầu</label>
                 <input type="text" placeholder="DD/MM/YYYY" className="w-full modal-input"
-                  value={startDate} onChange={e => setStartDate(e.target.value)} />
+                  value={form.startDate} onChange={handleChange('startDate')} />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Ngày kết thúc</label>
                 <input type="text" placeholder="DD/MM/YYYY" className="w-full modal-input"
-                  value={endDate} onChange={e => setEndDate(e.target.value)} />
+                  value={form.endDate} onChange={handleChange('endDate')} />
               </div>
             </div>
           </FormSection>
@@ -160,12 +154,12 @@ export default function VoucherCreate() {
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Giới hạn lượt</label>
                 <input type="number" placeholder="Không giới hạn" className={`w-full modal-input ${errors.usageLimit ? 'border-danger' : ''}`}
-                  value={usageLimit} onChange={e => setUsageLimit(e.target.value)} />
+                  value={form.usageLimit} onChange={handleChange('usageLimit')} />
                 {errors.usageLimit && <p className="text-xs text-danger mt-1">{errors.usageLimit}</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Trạng thái</label>
-                <select className="w-full modal-input" value={status} onChange={e => setStatus(e.target.value)}>
+                <select className="w-full modal-input" value={form.status} onChange={handleChange('status')}>
                   <option value="active">Đang hoạt động</option>
                   <option value="disabled">Đã tắt</option>
                 </select>
