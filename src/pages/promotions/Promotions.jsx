@@ -101,17 +101,6 @@ export default function Promotions() {
     ));
   };
 
-  const getProductName = (id) => products.find(p => p.id === id)?.name || id;
-
-  const getApplyTarget = (promo) => {
-    if (promo.applyTo === 'timeframe') {
-      if (promo.timeStart && promo.timeEnd) return `${promo.timeStart} - ${promo.timeEnd}`;
-      return 'Toàn thời gian';
-    }
-    if (promo.applyTo === 'category') return promo.categoryIds?.join(', ') || '—';
-    return promo.productIds?.map(id => getProductName(id)).join(', ') || '—';
-  };
-
   return (
     <PageContainer>
       <div className="flex flex-col gap-4 w-full min-w-0">
@@ -157,7 +146,6 @@ export default function Promotions() {
                 <th>Tên chương trình</th>
                 <th>Loại</th>
                 <th>Giá trị</th>
-                <th>Áp dụng</th>
                 <th className="hidden md:table-cell">Thời gian</th>
                 <th>Trạng thái</th>
                 <th className="text-right">Thao tác</th>
@@ -169,16 +157,17 @@ export default function Promotions() {
                   <td className="font-semibold">{p.name}</td>
                   <td><span className="badge badge-neutral">{TYPE_LABELS[p.type]}</span></td>
                   <td className="font-semibold">{p.type === 'fixed' ? fmtPrice(p.value) : `${p.value}%`}</td>
-                  <td className="text-sm text-muted truncate max-w-200px">{getApplyTarget(p)}</td>
                   <td className="text-sm text-muted hidden md:table-cell whitespace-nowrap">
                     {p.startDate} - {p.endDate}
                     {p.timeStart && <span className="ml-1">({p.timeStart}-{p.timeEnd})</span>}
                   </td>
                   <td>
-                    <button className={`badge ${p.status === 'active' ? 'badge-success' : 'badge-danger'}`}
-                      onClick={() => toggleStatus(p.id)}>
-                      {p.status === 'active' ? 'Đang hoạt động' : 'Đã tắt'}
-                    </button>
+                    <div className="flex items-center justify-center">
+                      <label className="switch" title={p.status === 'active' ? 'Tắt chương trình' : 'Bật chương trình'}>
+                        <input type="checkbox" checked={p.status === 'active'} onChange={() => toggleStatus(p.id)} />
+                        <span className="switch-slider"></span>
+                      </label>
+                    </div>
                   </td>
                   <td className="text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1">
@@ -189,7 +178,7 @@ export default function Promotions() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="text-center text-muted py-8">Không tìm thấy chương trình</td></tr>
+                <tr><td colSpan={6} className="text-center text-muted py-8">Không tìm thấy chương trình</td></tr>
               )}
             </tbody>
           </ResponsiveTable>
