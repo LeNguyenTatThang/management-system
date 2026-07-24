@@ -1,30 +1,24 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Coffee, LayoutDashboard, UtensilsCrossed, 
-  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, UserCog, Shield, Calendar, ClipboardCheck, ClipboardList
+  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, Shield, Calendar, ClipboardCheck, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navGroups = [
   {
-    title: 'QUẢN LÝ',
+    title: 'NHÂN SỰ',
     items: [
-      { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
       { name: 'Nhân viên', icon: Users, path: '/staff' },
       { name: 'Lịch làm việc', icon: Calendar, path: '/schedules' },
       { name: 'Chấm công', icon: ClipboardCheck, path: '/attendance' },
-      { name: 'Tài khoản', icon: UserCog, path: '/accounts' },
-      { name: 'Chức vụ', icon: Shield, path: '/accounts/roles' },
-      { name: 'Theme', icon: Palette, path: '/themes' },
-      { name: 'Voucher', icon: Tag, path: '/vouchers' },
-      { name: 'Chương trình KM', icon: Gift, path: '/promotions' },
     ],
   },
   {
-    title: 'BÁN HÀNG',
+    title: 'ĐƠN HÀNG',
     items: [
-      { name: 'Bán hàng / POS', icon: ShoppingCart, path: '/pos' },
       { name: 'Đơn hàng', icon: FileText, path: '/orders' },
+      { name: 'Bán hàng / POS', icon: ShoppingCart, path: '/pos' },
     ],
   },
   {
@@ -33,9 +27,25 @@ const navGroups = [
       { name: 'Món', icon: Coffee, path: '/products' },
       { name: 'Công thức', icon: UtensilsCrossed, path: '/recipes' },
       { name: 'Nguyên liệu', icon: Package, path: '/ingredients' },
+    ],
+  },
+  {
+    title: 'KHO',
+    items: [
       { name: 'Nhập kho', icon: ClipboardList, path: '/inventory/imports' },
       { name: 'Xuất kho', icon: LogOut, path: '/inventory/exports' },
+    ],
+  },
+  {
+    title: 'QUẢN LÝ CHUNG',
+    items: [
+      { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+      { name: 'Chức vụ', icon: Shield, path: '/accounts/roles' },
+      { name: 'Theme', icon: Palette, path: '/themes' },
+      { name: 'Voucher', icon: Tag, path: '/vouchers' },
+      { name: 'Chương trình KM', icon: Gift, path: '/promotions' },
       { name: 'Nhà cung cấp', icon: Store, path: '/suppliers' },
+      // { name: 'Tài khoản', icon: UserCog, path: '/accounts' } // tạm ẩn, sẽ phát triển thành "Tài khoản thành viên của KH"
     ],
   },
 ];
