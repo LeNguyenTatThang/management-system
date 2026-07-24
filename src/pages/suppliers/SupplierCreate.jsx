@@ -54,15 +54,17 @@ export default function SupplierCreate() {
   return (
     <PageContainer>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-2 text-sm text-muted mb-1">
-          <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/suppliers')}>Nhà cung cấp</button>
-          <span>&gt;</span>
-          <span className="text-main font-semibold">Thêm</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/suppliers')}>Nhà cung cấp</button>
+            <span>&gt;</span>
+            <span className="text-main font-semibold">Thêm</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
+            onClick={() => navigate('/suppliers')}>
+            <ArrowLeft size={16} /> Quay lại
+          </button>
         </div>
-        <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary mb-6 cursor-pointer"
-          onClick={() => navigate('/suppliers')}>
-          <ArrowLeft size={16} /> Quay lại
-        </button>
 
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Thêm nhà cung cấp</h1>

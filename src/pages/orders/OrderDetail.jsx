@@ -57,12 +57,17 @@ export default function OrderDetail() {
     <PageContainer>
       <div className="max-w-5xl mx-auto">
 
-        <button
-          className="flex items-center gap-1.5 text-sm text-muted hover-text-primary mb-4 cursor-pointer"
-          onClick={() => navigate('/orders')}
-        >
-          <ArrowLeft size={14} /> Quay lại
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/orders')}>QL Đơn hàng</button>
+            <span>&gt;</span>
+            <span className="text-main font-semibold">Chi tiết</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
+            onClick={() => navigate('/orders')}>
+            <ArrowLeft size={16} /> Quay lại
+          </button>
+        </div>
 
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>

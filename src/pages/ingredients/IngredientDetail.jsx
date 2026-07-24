@@ -64,9 +64,17 @@ export default function IngredientDetail() {
   return (
     <PageContainer>
       <div className="max-w-4xl mx-auto">
-        <button className="flex items-center gap-2 text-muted hover-text-primary mb-6 cursor-pointer" onClick={() => navigate('/ingredients')}>
-          <ArrowLeft size={18} /> Quay lại danh sách
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/ingredients')}>QL Nguyên Vật Liệu</button>
+            <span>&gt;</span>
+            <span className="text-main font-semibold">Chi tiết</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
+            onClick={() => navigate('/ingredients')}>
+            <ArrowLeft size={16} /> Quay lại
+          </button>
+        </div>
 
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Chi tiết nguyên liệu</h1>

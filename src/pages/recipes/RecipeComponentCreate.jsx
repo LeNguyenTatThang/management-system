@@ -1,46 +1,131 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecipe } from '../../contexts/RecipeContext';
+import { useMenuProduct } from '../../contexts/MenuProductContext';
 import { useIngredient } from '../../contexts/IngredientContext';
-import { ArrowLeft, Plus, Edit3, Trash2, ChefHat, DollarSign, Package, Info } from 'lucide-react';
+import { ArrowLeft, Plus, Edit3, Trash2, Package, DollarSign } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
-import FormSection from '../../components/ui/FormSection';
-import FormTextarea from '../../components/ui/FormTextarea';
 import RichTextEditor from '../../components/recipe/RichTextEditor';
 import IngredientModal from '../../components/recipe/IngredientModal';
+import MultiSelect from '../../components/ui/MultiSelect';
 import { toast } from 'react-hot-toast';
 
-const CATEGORIES = ['Cà phê', 'Sữa', 'Trà', 'Đường', 'Trái cây', 'Syrup', 'Topping', 'Khác'];
+const setupOptions = [
+  { value: 'Ly nhỏ', label: 'Ly nhỏ' },
+  { value: 'Ly lớn', label: 'Ly lớn' },
+  { value: 'Ống hút ngắn', label: 'Ống hút ngắn' },
+  { value: 'Ống hút dài', label: 'Ống hút dài' },
+  { value: 'Thìa ngắn', label: 'Thìa ngắn' },
+  { value: 'Thìa dài', label: 'Thìa dài' },
+  { value: 'Khay', label: 'Khay' },
+  { value: 'Đá viên', label: 'Đá viên' },
+  { value: 'Trân châu', label: 'Trân châu' },
+];
+
+function ConfirmModal({ title, message, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-overlay p-4" onClick={onCancel}>
+      <div className="card animate-fade-slide-in w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-lg mb-2">{title}</h3>
+        <p className="text-sm text-muted mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button className="btn flex-1 modal-btn" onClick={onCancel}>Hủy</button>
+          <button className="btn btn-danger flex-1 modal-btn" onClick={onConfirm}>Xóa</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductDetailModal({ detail, onSave, onClose }) {
+  const isEditing = !!detail;
+  const [price, setPrice] = useState(detail?.price || '');
+  const [cost, setCost] = useState(detail?.cost || '');
+  const [setups, setSetups] = useState(detail?.setups || []);
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const errs = {};
+    if (!price || isNaN(Number(price)) || Number(price) <= 0) errs.price = 'Giá bán phải lớn hơn 0';
+    if (!cost || isNaN(Number(cost)) || Number(cost) <= 0) errs.cost = 'Giá vốn phải lớn hơn 0';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+    onSave({ price: Number(price), cost: Number(cost), setups });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4" onClick={onClose}>
+      <div className="card animate-fade-slide-in w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-6 gap-4">
+          <h3 className="font-bold text-lg truncate">{isEditing ? 'Sửa chi tiết món' : 'Thêm chi tiết món'}</h3>
+          <button className="p-1 text-muted hover-text-danger cursor-pointer flex-shrink-0 text-24px leading-none" onClick={onClose}>×</button>
+        </div>
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1">Giá bán <span className="text-danger">*</span></label>
+            <input type="number" min="0" placeholder="Nhập giá bán..."
+              className={`w-full modal-input ${errors.price ? 'border-danger' : ''}`}
+              value={price} onChange={e => { setPrice(e.target.value); setErrors(p => ({ ...p, price: '' })); }} />
+            {errors.price && <p className="text-xs text-danger mt-1">{errors.price}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Giá vốn <span className="text-danger">*</span></label>
+            <input type="number" min="0" placeholder="Nhập giá vốn..."
+              className={`w-full modal-input ${errors.cost ? 'border-danger' : ''}`}
+              value={cost} onChange={e => { setCost(e.target.value); setErrors(p => ({ ...p, cost: '' })); }} />
+            {errors.cost && <p className="text-xs text-danger mt-1">{errors.cost}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Setup</label>
+            <MultiSelect
+              options={setupOptions}
+              value={setups}
+              onChange={setSetups}
+              placeholder="Chọn setup..."
+              searchPlaceholder="Tìm setup..."
+            />
+          </div>
+          <div className="flex gap-3 mt-2">
+            <button className="btn flex-1 modal-btn" onClick={onClose}>Hủy</button>
+            <button className="btn btn-primary flex-1 modal-btn" onClick={handleSave}>
+              {isEditing ? 'Lưu thay đổi' : 'Thêm'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function RecipeComponentCreate() {
   const navigate = useNavigate();
   const { addRecipe } = useRecipe();
+  const { products, addProduct, updateProduct } = useMenuProduct();
   const { ingredients } = useIngredient();
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [price, setPrice] = useState('');
-  const [cost, setCost] = useState('');
-  const [status, setStatus] = useState('Đang sử dụng');
+  const [activeTab, setActiveTab] = useState('ingredients');
   const [recipeIngredients, setRecipeIngredients] = useState([]);
+  const [productDetails, setProductDetails] = useState([]);
   const [showIngredientModal, setShowIngredientModal] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState(null);
+  const [showProductDetailModal, setShowProductDetailModal] = useState(false);
+  const [editingProductDetail, setEditingProductDetail] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const displayPrice = price ? Number(price).toLocaleString('vi-VN') + 'đ' : '';
-  const displayCost = cost ? Number(cost).toLocaleString('vi-VN') + 'đ' : '';
-  const profit = price && cost ? Number(price) - Number(cost) : 0;
-  const margin = price && Number(price) > 0 ? ((profit / Number(price)) * 100).toFixed(1) : 0;
+  const getIngredientName = (id) => ingredients.find(i => i.id === id)?.name || id;
 
   const validate = () => {
     const errs = {};
-    if (!name.trim()) errs.name = 'Tên thành phần không được để trống';
-    if (!category) errs.category = 'Vui lòng chọn danh mục';
-    if (!price || isNaN(Number(price)) || Number(price) <= 0) errs.price = 'Giá bán phải lớn hơn 0';
-    if (!cost || isNaN(Number(cost)) || Number(cost) <= 0) errs.cost = 'Giá vốn phải lớn hơn 0';
+    if (!name.trim()) errs.name = 'Tên món/công thức không được để trống';
     if (!instructions.trim()) errs.instructions = 'Vui lòng nhập cách làm';
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -50,22 +135,38 @@ export default function RecipeComponentCreate() {
     if (!validate()) return;
     setSaving(true);
     try {
+      const newProduct = await addProduct({
+        name: name.trim(),
+        category: '',
+        price: productDetails.length > 0 ? productDetails[0].price : 0,
+        cost: productDetails.length > 0 ? productDetails[0].cost : 0,
+        profit: productDetails.length > 0 ? productDetails[0].price - productDetails[0].cost : 0,
+        image: '',
+        description: description.trim(),
+        status: 'Đang bán',
+        tags: productDetails.length > 0 ? productDetails[0].setups : [],
+        size: '',
+        fc: productDetails.length > 0 && productDetails[0].price > 0
+          ? ((productDetails[0].price - productDetails[0].cost) / productDetails[0].price * 100).toFixed(1) + '%'
+          : '',
+      });
+
       await addRecipe({
+        productId: newProduct.id,
         productName: name.trim(),
-        category,
         image: '',
         note: description.trim(),
-        price: Number(price),
-        cost: Number(cost),
-        profit: Number(price) - Number(cost),
-        status,
         instructions: instructions ? [instructions] : [],
         ingredients: recipeIngredients.map(ing => ({
           ingredientId: ing.ingredientId,
           amount: Number(ing.amount),
           note: ''
-        }))
+        })),
+        price: productDetails.length > 0 ? productDetails[0].price : 0,
+        cost: productDetails.length > 0 ? productDetails[0].cost : 0,
+        setups: productDetails.length > 0 ? productDetails[0].setups : [],
       });
+
       toast.success('Thêm công thức thành phần nguyên liệu thành công');
       navigate('/recipes');
     } finally {
@@ -85,8 +186,8 @@ export default function RecipeComponentCreate() {
 
   const handleIngredientSave = (ing) => {
     if (editingIngredient) {
-      setRecipeIngredients(prev => prev.map((item, i) =>
-        i === recipeIngredients.indexOf(editingIngredient) ? ing : item
+      setRecipeIngredients(prev => prev.map(item =>
+        item === editingIngredient ? ing : item
       ));
     } else {
       setRecipeIngredients(prev => [...prev, ing]);
@@ -95,150 +196,204 @@ export default function RecipeComponentCreate() {
     setEditingIngredient(null);
   };
 
-  const handleRemoveIngredient = (idx) => {
-    setRecipeIngredients(prev => prev.filter((_, i) => i !== idx));
+  const requestDeleteIngredient = (idx) => {
+    setConfirmDelete({ type: 'ingredient', index: idx });
   };
 
-  const getIngredientName = (id) => ingredients.find(i => i.id === id)?.name || id;
-  const getIngredientUnit = (id) => ingredients.find(i => i.id === id)?.unit || '';
+  const openAddProductDetail = () => {
+    setEditingProductDetail(null);
+    setShowProductDetailModal(true);
+  };
+
+  const openEditProductDetail = (det) => {
+    setEditingProductDetail(det);
+    setShowProductDetailModal(true);
+  };
+
+  const handleProductDetailSave = (det) => {
+    if (editingProductDetail) {
+      setProductDetails(prev => prev.map(item =>
+        item === editingProductDetail ? det : item
+      ));
+    } else {
+      setProductDetails(prev => [...prev, det]);
+    }
+    setShowProductDetailModal(false);
+    setEditingProductDetail(null);
+  };
+
+  const requestDeleteProductDetail = (idx) => {
+    setConfirmDelete({ type: 'productDetail', index: idx });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!confirmDelete) return;
+    if (confirmDelete.type === 'ingredient') {
+      setRecipeIngredients(prev => prev.filter((_, i) => i !== confirmDelete.index));
+    } else if (confirmDelete.type === 'productDetail') {
+      setProductDetails(prev => prev.filter((_, i) => i !== confirmDelete.index));
+    }
+    setConfirmDelete(null);
+  };
 
   return (
     <PageContainer>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-2 text-sm text-muted mb-1">
-          <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/recipes')}>Công thức thành phần</button>
-          <span>&gt;</span>
-          <span className="text-main font-semibold">Thêm</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/recipes')}>Công thức thành phần</button>
+            <span>&gt;</span>
+            <span className="text-main font-semibold">Thêm</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
+            onClick={() => navigate('/recipes')}>
+            <ArrowLeft size={16} /> Quay lại
+          </button>
         </div>
-        <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary mb-6 cursor-pointer"
-          onClick={() => navigate('/recipes')}>
-          <ArrowLeft size={16} /> Quay lại
-        </button>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Thêm công thức thành phần nguyên liệu</h1>
-          <p className="text-muted text-sm mt-1">Tạo công thức và thông tin thành phần mới</p>
+          <h1 className="text-2xl font-bold">Công thức thành phần nguyên liệu</h1>
+          <p className="text-muted text-sm mt-1">Tạo công thức mới với nguyên vật liệu và thông tin chi tiết món</p>
         </div>
 
-        <FormSection icon={Info} title="THÔNG TIN CƠ BẢN" className="mb-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="card mb-5">
+          <div className="flex flex-col gap-5">
             <div>
-              <label className="block text-sm font-semibold mb-1.5">Tên thành phần <span className="text-danger">*</span></label>
-              <input type="text" placeholder="Nhập tên thành phần..."
+              <label className="block text-sm font-semibold mb-1.5">Tên món/công thức <span className="text-danger">*</span></label>
+              <input type="text" placeholder="Nhập tên món/công thức..."
                 className={`w-full modal-input ${errors.name ? 'border-danger' : ''}`}
-                value={name} onChange={e => setName(e.target.value)} />
+                value={name} onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }} />
               {errors.name && <p className="text-xs text-danger mt-1">{errors.name}</p>}
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1.5">Danh mục <span className="text-danger">*</span></label>
-              <select className={`w-full modal-input ${errors.category ? 'border-danger' : ''}`}
-                value={category} onChange={e => setCategory(e.target.value)}>
-                <option value="">-- Chọn danh mục --</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              {errors.category && <p className="text-xs text-danger mt-1">{errors.category}</p>}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-semibold mb-1.5">Giá bán <span className="text-danger">*</span></label>
-              <input type="text" placeholder="25.000"
-                className={`w-full modal-input ${errors.price ? 'border-danger' : ''}`}
-                value={price} onChange={e => {
-                  const val = e.target.value.replace(/[^\d]/g, '');
-                  setPrice(val);
-                }} />
-              {errors.price && <p className="text-xs text-danger mt-1">{errors.price}</p>}
+              <label className="block text-sm font-semibold mb-1.5">Mô tả</label>
+              <textarea placeholder="Nhập mô tả ngắn về món/công thức..."
+                className="w-full modal-input" rows={3}
+                value={description} onChange={e => setDescription(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1.5">Giá vốn <span className="text-danger">*</span></label>
-              <input type="text" placeholder="7.640"
-                className={`w-full modal-input ${errors.cost ? 'border-danger' : ''}`}
-                value={cost} onChange={e => {
-                  const val = e.target.value.replace(/[^\d]/g, '');
-                  setCost(val);
-                }} />
-              {errors.cost && <p className="text-xs text-danger mt-1">{errors.cost}</p>}
+              <RichTextEditor
+                value={instructions}
+                onChange={v => { setInstructions(v); setErrors(p => ({ ...p, instructions: '' })); }}
+                placeholder="Nhập cách làm..."
+                label="Cách làm"
+                error={errors.instructions}
+                minHeight="200px"
+              />
             </div>
           </div>
-          <FormTextarea label="Mô tả ngắn" placeholder="Nhập mô tả ngắn..."
-            value={description} onChange={e => setDescription(e.target.value)} rows={3} />
-          {price && cost && Number(price) > 0 && (
-            <div className="p-4 bg-bg rounded-lg text-sm grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div><span className="text-muted">Giá bán: </span><span className="font-semibold">{displayPrice}</span></div>
-              <div><span className="text-muted">Giá vốn: </span><span className="font-semibold">{displayCost}</span></div>
-              <div><span className="text-muted">Lợi nhuận: </span><span className="font-semibold text-success">{profit.toLocaleString('vi-VN')}đ</span></div>
-              <div><span className="text-muted">Biên lợi nhuận: </span><span className="font-semibold text-primary">{margin}%</span></div>
+        </div>
+
+        <div className="card mb-6">
+          <div className="flex border-b border-soft mb-0">
+            <button
+              className={`px-5 py-3 text-sm font-semibold transition cursor-pointer border-b-2 -mb-px ${activeTab === 'ingredients' ? 'text-primary border-primary' : 'text-muted border-transparent hover:text-main'}`}
+              onClick={() => setActiveTab('ingredients')}>
+              Nguyên vật liệu
+            </button>
+            <button
+              className={`px-5 py-3 text-sm font-semibold transition cursor-pointer border-b-2 -mb-px ${activeTab === 'details' ? 'text-primary border-primary' : 'text-muted border-transparent hover:text-main'}`}
+              onClick={() => setActiveTab('details')}>
+              Chi tiết món
+            </button>
+          </div>
+
+          {activeTab === 'ingredients' && (
+            <div className="p-5">
+              <button className="btn btn-outline text-sm flex items-center gap-1.5 h-40px mb-4"
+                onClick={openAddIngredient}>
+                <Plus size={16} /> Thêm nguyên vật liệu
+              </button>
+
+              {recipeIngredients.length === 0 ? (
+                <div className="text-center text-muted py-8 text-sm bg-bg rounded-lg">
+                  Chưa có nguyên vật liệu. Nhấn "Thêm nguyên vật liệu" để bắt đầu.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted border-b border-soft">
+                        <th className="text-left font-semibold py-2 pr-3">Tên nguyên vật liệu</th>
+                        <th className="text-right font-semibold py-2 px-3 whitespace-nowrap">Định lượng</th>
+                        <th className="text-left font-semibold py-2 px-3">Đơn vị</th>
+                        <th className="text-right font-semibold py-2 pl-3">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recipeIngredients.map((ing, idx) => (
+                        <tr key={idx} className="border-b border-soft">
+                          <td className="py-2 pr-3 break-words">{getIngredientName(ing.ingredientId)}</td>
+                          <td className="text-right py-2 px-3 font-semibold">{ing.amount}</td>
+                          <td className="py-2 px-3">{ing.unit || ingredients.find(i => i.id === ing.ingredientId)?.unit || ''}</td>
+                          <td className="text-right py-2 pl-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
+                                onClick={() => openEditIngredient(ing)}><Edit3 size={15} /></button>
+                              <button className="p-1.5 text-muted hover-text-danger cursor-pointer"
+                                onClick={() => requestDeleteIngredient(idx)}><Trash2 size={15} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
-        </FormSection>
 
-        <FormSection icon={ChefHat} title="CÁCH LÀM" subtitle="Nhập hướng dẫn chi tiết cách làm" className="mb-5">
-          <RichTextEditor
-            value={instructions}
-            onChange={setInstructions}
-            placeholder="Nhập cách làm..."
-            error={errors.instructions}
-          />
-        </FormSection>
+          {activeTab === 'details' && (
+            <div className="p-5">
+              <button className="btn btn-outline text-sm flex items-center gap-1.5 h-40px mb-4"
+                onClick={openAddProductDetail}>
+                <Plus size={16} /> Thêm chi tiết món
+              </button>
 
-        <FormSection icon={Package} title="NGUYÊN LIỆU" subtitle="Danh sách nguyên liệu cần cho thành phần" className="mb-5">
-          {recipeIngredients.length === 0 ? (
-            <div className="text-center text-muted py-8 text-sm bg-bg rounded-lg">
-              Chưa có nguyên liệu. Nhấn "Thêm nguyên liệu" để bắt đầu.
-            </div>
-          ) : (
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="w-12 text-center">STT</th>
-                    <th>Tên NVL</th>
-                    <th className="text-right">Định lượng</th>
-                    <th>Đơn vị</th>
-                    <th className="text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recipeIngredients.map((ing, idx) => (
-                    <tr key={idx}>
-                      <td className="text-center text-muted text-sm">{idx + 1}</td>
-                      <td className="font-semibold">{getIngredientName(ing.ingredientId)}</td>
-                      <td className="text-right font-semibold">{ing.amount}</td>
-                      <td>{getIngredientUnit(ing.ingredientId)}</td>
-                      <td className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
-                            onClick={() => openEditIngredient(ing)}><Edit3 size={15} /></button>
-                          <button className="p-1.5 text-muted hover-text-danger cursor-pointer"
-                            onClick={() => handleRemoveIngredient(idx)}><Trash2 size={15} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {productDetails.length === 0 ? (
+                <div className="text-center text-muted py-8 text-sm bg-bg rounded-lg">
+                  Chưa có chi tiết món. Nhấn "Thêm chi tiết món" để bắt đầu.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted border-b border-soft">
+                        <th className="text-left font-semibold py-2 pr-3">Giá bán</th>
+                        <th className="text-left font-semibold py-2 px-3">Giá vốn</th>
+                        <th className="text-left font-semibold py-2 px-3">Setup</th>
+                        <th className="text-right font-semibold py-2 pl-3">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productDetails.map((det, idx) => (
+                        <tr key={idx} className="border-b border-soft">
+                          <td className="py-2 pr-3 font-semibold">{det.price.toLocaleString('vi-VN')}đ</td>
+                          <td className="py-2 px-3">{det.cost.toLocaleString('vi-VN')}đ</td>
+                          <td className="py-2 px-3">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {det.setups && det.setups.length > 0 ? det.setups.map((s, si) => (
+                                <span key={si} className="text-xs bg-gray-100 text-muted px-2 py-0.5 rounded-full">{s}</span>
+                              )) : <span className="text-muted">—</span>}
+                            </div>
+                          </td>
+                          <td className="text-right py-2 pl-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
+                                onClick={() => openEditProductDetail(det)}><Edit3 size={15} /></button>
+                              <button className="p-1.5 text-muted hover-text-danger cursor-pointer"
+                                onClick={() => requestDeleteProductDetail(idx)}><Trash2 size={15} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
-          <button className="btn btn-outline text-sm self-start flex items-center gap-1.5 h-40px"
-            onClick={openAddIngredient}>
-            <Plus size={16} /> Thêm nguyên liệu
-          </button>
-        </FormSection>
-
-        <FormSection icon={DollarSign} title="TRẠNG THÁI" className="mb-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-sm font-semibold">Đang sử dụng</div>
-              <div className="text-xs text-muted mt-0.5">Cho phép thành phần được sử dụng</div>
-            </div>
-            <label className="switch flex-shrink-0">
-              <input type="checkbox" checked={status === 'Đang sử dụng'}
-                onChange={e => setStatus(e.target.checked ? 'Đang sử dụng' : 'Đã tắt')} />
-              <span className="switch-slider" />
-            </label>
-          </div>
-        </FormSection>
+        </div>
 
         <div className="flex items-center justify-end gap-3 mt-6 mb-8">
           <button className="btn btn-outline modal-btn px-6" onClick={() => navigate('/recipes')}>Hủy</button>
@@ -254,6 +409,25 @@ export default function RecipeComponentCreate() {
           ingredient={editingIngredient}
           onSave={handleIngredientSave}
           onClose={() => { setShowIngredientModal(false); setEditingIngredient(null); }}
+        />
+      )}
+
+      {showProductDetailModal && (
+        <ProductDetailModal
+          detail={editingProductDetail}
+          onSave={handleProductDetailSave}
+          onClose={() => { setShowProductDetailModal(false); setEditingProductDetail(null); }}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.type === 'ingredient' ? 'Xóa nguyên vật liệu?' : 'Xóa chi tiết món?'}
+          message={confirmDelete.type === 'ingredient'
+            ? 'Bạn có chắc muốn xóa nguyên vật liệu này khỏi công thức?'
+            : 'Bạn có chắc muốn xóa chi tiết món này?'}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </PageContainer>

@@ -94,15 +94,17 @@ export default function ExportReceiptDetail() {
   return (
     <PageContainer>
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-2 text-sm text-muted mb-1">
-          <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/inventory/exports')}>Xuất kho</button>
-          <span>&gt;</span>
-          <span className="text-main font-semibold">Chi tiết</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/inventory/exports')}>Xuất kho</button>
+            <span>&gt;</span>
+            <span className="text-main font-semibold">Chi tiết</span>
+          </div>
+          <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
+            onClick={() => navigate('/inventory/exports')}>
+            <ArrowLeft size={16} /> Quay lại
+          </button>
         </div>
-        <button className="flex items-center gap-1.5 text-sm text-muted hover-text-primary mb-6 cursor-pointer"
-          onClick={() => navigate('/inventory/exports')}>
-          <ArrowLeft size={16} /> Quay lại
-        </button>
 
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Bold, Italic, List, ListOrdered, RemoveFormatting } from 'lucide-react';
 
-export default function RichTextEditor({ value, onChange, placeholder, label, required, error }) {
+export default function RichTextEditor({ value, onChange, placeholder, label, required, error, minHeight = '120px' }) {
   const editorRef = useRef(null);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -49,7 +49,8 @@ export default function RichTextEditor({ value, onChange, placeholder, label, re
         </div>
         <div
           ref={editorRef}
-          className="px-4 py-3 min-h-[120px] text-sm outline-none text-gray-900 leading-relaxed"
+          className="px-4 py-3 text-sm outline-none text-gray-900 leading-relaxed"
+          style={{ minHeight }}
           contentEditable
           suppressContentEditableWarning
           onInput={handleInput}
