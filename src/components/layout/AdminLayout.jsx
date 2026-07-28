@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useLocation, NavLink, useNavigate } from 'react-router-dom';
-import { Coffee, LayoutDashboard, UtensilsCrossed, ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, X, Palette, Tag, Gift, Calendar, ClipboardCheck, ClipboardList } from 'lucide-react';
+import { Coffee, LayoutDashboard, UtensilsCrossed, ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, X, Palette, Tag, Gift, Calendar, ClipboardCheck, ClipboardList, HeartHandshake } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,6 +13,7 @@ const navGroups = [
       { name: 'Nhân viên', icon: Users, path: '/staff' },
       { name: 'Lịch làm việc', icon: Calendar, path: '/schedules' },
       { name: 'Chấm công', icon: ClipboardCheck, path: '/attendance' },
+      { name: 'Xin nghỉ phép', icon: HeartHandshake, path: '/leave-requests' },
       { name: 'Theme', icon: Palette, path: '/themes' },
       { name: 'Voucher', icon: Tag, path: '/vouchers' },
       { name: 'Chương trình KM', icon: Gift, path: '/promotions' },

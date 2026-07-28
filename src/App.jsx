@@ -11,6 +11,7 @@ import { AccountProvider } from './contexts/AccountContext';
 import { RoleProvider } from './contexts/RoleContext';
 import { ScheduleProvider } from './contexts/ScheduleContext';
 import { AttendanceProvider } from './contexts/AttendanceContext';
+import { LeaveProvider } from './contexts/LeaveContext';
 import { ImportReceiptProvider } from './contexts/ImportReceiptContext';
 import { InventoryExportProvider } from './contexts/InventoryExportContext';
 import AdminLayout from './components/layout/AdminLayout';
@@ -48,6 +49,7 @@ import ScheduleDetail from './pages/schedules/ScheduleDetail';
 import ScheduleEdit from './pages/schedules/ScheduleEdit';
 import Attendance from './pages/attendance/Attendance';
 import AttendanceDetail from './pages/attendance/AttendanceDetail';
+import LeaveRequests from './pages/leave-requests/LeaveRequests';
 import ImportReceiptList from './pages/inventory/imports/ImportReceiptList';
 import ImportReceiptCreate from './pages/inventory/imports/ImportReceiptCreate';
 import ImportReceiptDetail from './pages/inventory/imports/ImportReceiptDetail';
@@ -96,6 +98,7 @@ function AppRoutes() {
         <Route path="themes" element={<Themes />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="attendance/:id" element={<AttendanceDetail />} />
+        <Route path="leave-requests" element={<LeaveRequests />} />
         <Route path="inventory/imports" element={<ImportReceiptList />} />
         <Route path="inventory/imports/create" element={<ImportReceiptCreate />} />
         <Route path="inventory/imports/:id" element={<ImportReceiptDetail />} />
@@ -136,11 +139,13 @@ function App() {
           <AccountProvider>
           <ScheduleProvider>
           <AttendanceProvider>
+          <LeaveProvider>
           <ImportReceiptProvider>
           <InventoryExportProvider>
           <AppRoutes />
           </InventoryExportProvider>
           </ImportReceiptProvider>
+          </LeaveProvider>
           </AttendanceProvider>
           </ScheduleProvider>
           </AccountProvider>

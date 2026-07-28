@@ -9,6 +9,7 @@ const getTitle = (pathname) => {
   if (pathname.includes('/ingredients')) return 'Nguyên liệu';
   if (pathname.includes('/orders')) return 'Đơn hàng';
   if (pathname.includes('/staff')) return 'Nhân viên';
+  if (pathname.includes('/leave-requests')) return 'Xin nghỉ phép';
   if (pathname.includes('/suppliers')) return 'Nhà cung cấp';
   if (pathname.includes('/pos')) return 'Bán hàng / POS';
   return 'Dez Lab';

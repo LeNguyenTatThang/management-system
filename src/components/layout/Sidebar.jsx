@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Coffee, LayoutDashboard, UtensilsCrossed, 
-  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, Shield, Calendar, ClipboardCheck, ClipboardList
+  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, Shield, Calendar, ClipboardCheck, ClipboardList, HeartHandshake
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -12,6 +12,7 @@ const navGroups = [
       { name: 'Nhân viên', icon: Users, path: '/staff' },
       { name: 'Lịch làm việc', icon: Calendar, path: '/schedules' },
       { name: 'Chấm công', icon: ClipboardCheck, path: '/attendance' },
+      { name: 'Xin nghỉ phép', icon: HeartHandshake, path: '/leave-requests' },
     ],
   },
   {
