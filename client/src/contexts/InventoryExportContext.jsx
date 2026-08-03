@@ -123,7 +123,7 @@ const InventoryExportContext = createContext(null);
 export function InventoryExportProvider({ children }) {
   const [exports, setExports] = useState(loadData);
   const { user } = useAuth();
-  const { ingredients, subtractStock, addStock } = useIngredient();
+  const { ingredients } = useIngredient();
 
   const getExportById = useCallback((id) => {
     return exports.find(r => r.id === id) || null;
@@ -242,18 +242,19 @@ export function InventoryExportProvider({ children }) {
       }
     }
 
-    for (const item of itemsWithStock) {
-      if (!item.ingredientId) continue;
-      const qty = parseFloat(item.requestedQuantity) || 0;
-      if (qty <= 0) continue;
-
-      if (existing.exportType === 'TRANSFER' && existing.toBranchId) {
-        await subtractStock(item.ingredientId, qty);
-        await addStock(item.ingredientId, qty);
-      } else {
-        await subtractStock(item.ingredientId, qty);
-      }
-    }
+    // TODO: Implement stock adjustment via API when backend is ready
+    // for (const item of itemsWithStock) {
+    //   if (!item.ingredientId) continue;
+    //   const qty = parseFloat(item.requestedQuantity) || 0;
+    //   if (qty <= 0) continue;
+    //
+    //   if (existing.exportType === 'TRANSFER' && existing.toBranchId) {
+    //     await subtractStock(item.ingredientId, qty);
+    //     await addStock(item.ingredientId, qty);
+    //   } else {
+    //     await subtractStock(item.ingredientId, qty);
+    //   }
+    // }
 
     const updatedItem = {
       ...existing,
@@ -268,7 +269,7 @@ export function InventoryExportProvider({ children }) {
     setExports(updated);
     saveData(updated);
     return updatedItem;
-  }, [exports, user, getFullIngredient, subtractStock, addStock]);
+  }, [exports, user, getFullIngredient]);
 
   const cancelExport = useCallback(async (id) => {
     const existing = exports.find(r => r.id === id);

@@ -53,6 +53,7 @@ const permissionGroups = [
   { group: 'product', module: 'setup', label: 'Setup phụ kiện', permissions: ['read', 'create', 'update', 'delete'] },
   { group: 'product', module: 'recipe', label: 'Công thức', permissions: ['read', 'create', 'update', 'delete'] },
   { group: 'product', module: 'ingredient', label: 'Nguyên liệu', permissions: ['read', 'create', 'update', 'delete'] },
+  { group: 'inventory', module: 'import', label: 'Nhập kho', permissions: ['read', 'create', 'update', 'delete'] },
 ];
 
 // Permissions granted to the MANAGER role (seed development only)
@@ -108,7 +109,7 @@ async function main() {
   const managerRole = await prisma.role.findUnique({ where: { code: 'MANAGER' } });
   if (managerRole) {
     const perms = await prisma.permission.findMany({
-      where: { group: { in: ['hr', 'product'] } },
+      where: { group: { in: ['hr', 'product', 'inventory'] } },
     });
     for (const perm of perms) {
       await prisma.rolePermission.upsert({

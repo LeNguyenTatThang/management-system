@@ -14,6 +14,7 @@ import { SetupModule } from './modules/setup/setup.module';
 import { ProductModule } from './modules/product/product.module';
 import { IngredientModule } from './modules/ingredient/ingredient.module';
 import { RecipeModule } from './modules/recipe/recipe.module';
+import { InventoryImportModule } from './modules/inventory-import/inventory-import.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { RecipeModule } from './modules/recipe/recipe.module';
     ProductModule,
     IngredientModule,
     RecipeModule,
+    InventoryImportModule,
   ],
   providers: [
     {

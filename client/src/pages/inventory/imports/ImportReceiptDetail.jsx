@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useImportReceipt } from '../../../contexts/ImportReceiptContext';
-import { ArrowLeft, Calendar, MapPin, Store, User, FileText, Package, Edit3, CheckCircle, XCircle, PackageCheck } from 'lucide-react';
+import { ArrowLeft, Calendar, User, FileText, Package, Edit3, CheckCircle, XCircle, PackageCheck } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
-import { BRANCHES } from '../../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
 
 const STATUS_CONFIG = {
-  draft: { label: 'Nháp', color: '#6b7280', bg: '#f3f4f6' },
-  confirmed: { label: 'Đã xác nhận', color: '#3b82f6', bg: '#eff6ff' },
-  received: { label: 'Đã nhập kho', color: '#10b981', bg: '#ecfdf5' },
-  cancelled: { label: 'Đã hủy', color: '#ef4444', bg: '#fef2f2' },
+  DRAFT: { label: 'Nháp', color: '#6b7280', bg: '#f3f4f6' },
+  CONFIRMED: { label: 'Đã xác nhận', color: '#3b82f6', bg: '#eff6ff' },
+  RECEIVED: { label: 'Đã nhập kho', color: '#10b981', bg: '#ecfdf5' },
+  CANCELLED: { label: 'Đã hủy', color: '#ef4444', bg: '#fef2f2' },
 };
 
-const STATUS_ORDER = ['draft', 'confirmed', 'received'];
+const STATUS_ORDER = ['DRAFT', 'CONFIRMED', 'RECEIVED'];
 
 function fmtMoney(amount) {
   return (amount || 0).toLocaleString('vi-VN') + ' ₫';
+}
+
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('vi-VN');
 }
 
 function fmtDateTime(iso) {
@@ -33,47 +38,63 @@ function fmtDateTime(iso) {
 export default function ImportReceiptDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getImportById, confirmImport, receiveImport, cancelImport } = useImportReceipt();
+  const { getImport, confirm, receive, cancel } = useImportReceipt();
   const [receipt, setReceipt] = useState(null);
 
   useEffect(() => {
-    const r = getImportById(id);
-    if (!r) {
-      toast.error('Không tìm thấy phiếu nhập');
-      navigate('/inventory/imports');
-      return;
-    }
-    setReceipt(r);
-  }, [id, getImportById, navigate]);
+    const load = async () => {
+      const r = await getImport(id);
+      if (!r) {
+        toast.error('Không tìm thấy phiếu nhập');
+        navigate('/inventory/imports');
+        return;
+      }
+      setReceipt(r);
+    };
+    load();
+  }, [id, getImport, navigate]);
 
   if (!receipt) return null;
 
-  const cfg = STATUS_CONFIG[receipt.status] || STATUS_CONFIG.draft;
-  const branchName = BRANCHES.find(b => b.id === receipt.branchId)?.name || receipt.branchName;
+  const cfg = STATUS_CONFIG[receipt.status] || STATUS_CONFIG.DRAFT;
+  const totalQuantity = receipt.items?.reduce((s, i) => s + (i.quantity || 0), 0) || 0;
+  const totalAmount = receipt.items?.reduce((s, i) => s + (i.amount || 0), 0) || 0;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!window.confirm('Xác nhận phiếu nhập này?')) return;
-    confirmImport(receipt.id);
-    toast.success('Đã xác nhận phiếu nhập');
-    setReceipt(prev => ({ ...prev, status: 'confirmed', confirmedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
+    try {
+      await confirm(receipt.id);
+      toast.success('Đã xác nhận phiếu nhập');
+      setReceipt(prev => ({ ...prev, status: 'CONFIRMED', confirmedAt: new Date().toISOString() }));
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const handleReceive = () => {
+  const handleReceive = async () => {
     if (!window.confirm('Xác nhận đã nhập kho? Hàng hóa sẽ được cộng vào tồn kho.')) return;
-    receiveImport(receipt.id);
-    toast.success('Đã nhập kho thành công');
-    setReceipt(prev => ({ ...prev, status: 'received', receivedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
+    try {
+      await receive(receipt.id);
+      toast.success('Đã nhập kho thành công');
+      setReceipt(prev => ({ ...prev, status: 'RECEIVED', receivedAt: new Date().toISOString() }));
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const handleCancel = () => {
-    if (receipt.status === 'received') {
+  const handleCancel = async () => {
+    if (receipt.status === 'RECEIVED') {
       toast.error('Không thể hủy phiếu đã nhập kho');
       return;
     }
     if (!window.confirm(`Hủy phiếu nhập ${receipt.code}?`)) return;
-    cancelImport(receipt.id);
-    toast.success('Đã hủy phiếu nhập');
-    setReceipt(prev => ({ ...prev, status: 'cancelled', cancelledAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
+    try {
+      await cancel(receipt.id);
+      toast.success('Đã hủy phiếu nhập');
+      setReceipt(prev => ({ ...prev, status: 'CANCELLED', cancelledAt: new Date().toISOString() }));
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const InfoRow = ({ icon: Icon, label, value }) => (
@@ -106,7 +127,7 @@ export default function ImportReceiptDetail() {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Phiếu nhập {receipt.code}</h1>
-            <p className="text-muted text-sm mt-1">{receipt.date} &middot; {receipt.supplierName}</p>
+            <p className="text-muted text-sm mt-1">{fmtDate(receipt.importDate)}</p>
           </div>
           <span className="badge font-semibold mt-2" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
             {cfg.label}
@@ -117,10 +138,8 @@ export default function ImportReceiptDetail() {
           <h3 className="font-bold text-base mb-4">THÔNG TIN CHUNG</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <InfoRow icon={Calendar} label="Mã phiếu" value={receipt.code} />
-            <InfoRow icon={Calendar} label="Ngày nhập" value={receipt.date} />
-            <InfoRow icon={Store} label="Nhà cung cấp" value={receipt.supplierName} />
-            <InfoRow icon={MapPin} label="Kho/Chi nhánh" value={branchName} />
-            <InfoRow icon={User} label="Người tạo" value={receipt.createdBy} />
+            <InfoRow icon={Calendar} label="Ngày nhập" value={fmtDate(receipt.importDate)} />
+            <InfoRow icon={User} label="Người tạo" value={receipt.createdByName} />
             <InfoRow icon={Calendar} label="Ngày tạo" value={fmtDateTime(receipt.createdAt)} />
           </div>
         </div>
@@ -149,11 +168,11 @@ export default function ImportReceiptDetail() {
                 </tr>
               </thead>
               <tbody>
-                {receipt.items.map((item, i) => (
+                {receipt.items?.map((item, i) => (
                   <tr key={i} className="border-b border-soft/50">
                     <td className="p-3 text-sm">{i + 1}</td>
-                    <td className="p-3 text-sm font-semibold">{item.ingredientName}</td>
-                    <td className="p-3 text-sm text-muted">{item.unit}</td>
+                    <td className="p-3 text-sm font-semibold">{item.ingredient?.name}</td>
+                    <td className="p-3 text-sm text-muted">{item.unit?.name}</td>
                     <td className="p-3 text-sm text-right">{item.quantity}</td>
                     <td className="p-3 text-sm text-right">{fmtMoney(item.unitPrice)}</td>
                     <td className="p-3 text-sm text-right font-semibold">{fmtMoney(item.amount)}</td>
@@ -166,13 +185,13 @@ export default function ImportReceiptDetail() {
 
           <div className="flex items-center justify-end gap-6 mt-4 pt-4 border-t border-soft">
             <div className="text-sm text-muted">
-              Số mặt hàng: <span className="font-bold text-main">{receipt.totalItems}</span>
+              Số mặt hàng: <span className="font-bold text-main">{receipt.items?.length || 0}</span>
             </div>
             <div className="text-sm text-muted">
-              Tổng số lượng: <span className="font-bold text-main">{(receipt.totalQuantity || 0).toLocaleString('vi-VN')}</span>
+              Tổng số lượng: <span className="font-bold text-main">{totalQuantity.toLocaleString('vi-VN')}</span>
             </div>
             <div className="text-base font-bold text-primary">
-              Tổng tiền: {fmtMoney(receipt.totalAmount)}
+              Tổng tiền: {fmtMoney(totalAmount)}
             </div>
           </div>
         </div>
@@ -184,9 +203,9 @@ export default function ImportReceiptDetail() {
               {STATUS_ORDER.map((s, i) => {
                 const scfg = STATUS_CONFIG[s];
                 const idx = STATUS_ORDER.indexOf(receipt.status);
-                const done = i <= idx && receipt.status !== 'cancelled';
-                const isCancelled = receipt.status === 'cancelled';
-                const time = s === 'draft' ? fmtDateTime(receipt.createdAt) : s === 'confirmed' ? fmtDateTime(receipt.confirmedAt) : fmtDateTime(receipt.receivedAt);
+                const done = i <= idx && receipt.status !== 'CANCELLED';
+                const isCancelled = receipt.status === 'CANCELLED';
+                const time = s === 'DRAFT' ? fmtDateTime(receipt.createdAt) : s === 'CONFIRMED' ? fmtDateTime(receipt.confirmedAt) : fmtDateTime(receipt.receivedAt);
                 return (
                   <div key={s} className="flex items-center gap-3 py-2">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${isCancelled && !done ? 'bg-gray-200' : done ? 'bg-primary' : 'bg-gray-200'}`}>
@@ -202,7 +221,7 @@ export default function ImportReceiptDetail() {
                   </div>
                 );
               })}
-              {receipt.status === 'cancelled' && (
+              {receipt.status === 'CANCELLED' && (
                 <div className="flex items-center gap-3 py-2">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-danger">
                     <XCircle size={14} className="text-white" />
@@ -232,7 +251,7 @@ export default function ImportReceiptDetail() {
         )}
 
         <div className="flex items-center justify-end gap-3 mt-6 mb-8">
-          {receipt.status === 'draft' && (
+          {receipt.status === 'DRAFT' && (
             <>
               <button className="btn btn-outline modal-btn px-6 flex items-center gap-2 text-danger" onClick={handleCancel}>
                 <XCircle size={16} /> Hủy phiếu
@@ -246,7 +265,7 @@ export default function ImportReceiptDetail() {
               </button>
             </>
           )}
-          {receipt.status === 'confirmed' && (
+          {receipt.status === 'CONFIRMED' && (
             <>
               <button className="btn btn-outline modal-btn px-6 flex items-center gap-2 text-danger" onClick={handleCancel}>
                 <XCircle size={16} /> Hủy phiếu
@@ -257,10 +276,10 @@ export default function ImportReceiptDetail() {
               </button>
             </>
           )}
-          {receipt.status === 'cancelled' && (
+          {receipt.status === 'CANCELLED' && (
             <button className="btn btn-outline modal-btn px-6" onClick={() => navigate('/inventory/imports')}>Quay lại</button>
           )}
-          {receipt.status === 'received' && (
+          {receipt.status === 'RECEIVED' && (
             <button className="btn btn-outline modal-btn px-6" onClick={() => navigate('/inventory/imports')}>Quay lại</button>
           )}
         </div>

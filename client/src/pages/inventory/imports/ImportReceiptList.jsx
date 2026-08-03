@@ -1,71 +1,77 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useImportReceipt } from '../../../contexts/ImportReceiptContext';
-import { useSupplier } from '../../../contexts/SupplierContext';
 import { Plus, Search, Edit3, CheckCircle, XCircle, PackageCheck } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
 import ResponsiveTable from '../../../components/ui/ResponsiveTable';
-import FilterPopover from '../../../components/ui/FilterPopover';
-import { BRANCHES } from '../../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
 
 const STATUS_CONFIG = {
-  draft: { label: 'Nháp', color: '#6b7280', bg: '#f3f4f6' },
-  confirmed: { label: 'Đã xác nhận', color: '#3b82f6', bg: '#eff6ff' },
-  received: { label: 'Đã nhập kho', color: '#10b981', bg: '#ecfdf5' },
-  cancelled: { label: 'Đã hủy', color: '#ef4444', bg: '#fef2f2' },
+  DRAFT: { label: 'Nháp', color: '#6b7280', bg: '#f3f4f6' },
+  CONFIRMED: { label: 'Đã xác nhận', color: '#3b82f6', bg: '#eff6ff' },
+  RECEIVED: { label: 'Đã nhập kho', color: '#10b981', bg: '#ecfdf5' },
+  CANCELLED: { label: 'Đã hủy', color: '#ef4444', bg: '#fef2f2' },
 };
 
 function fmtMoney(amount) {
   return (amount || 0).toLocaleString('vi-VN') + ' ₫';
 }
 
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('vi-VN');
+}
+
 export default function ImportReceiptList() {
   const navigate = useNavigate();
-  const { imports, confirmImport, receiveImport, cancelImport } = useImportReceipt();
-  const { suppliers } = useSupplier();
+  const { imports, loading, error, fetchImports, confirm, receive, cancel } = useImportReceipt();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterSupplier, setFilterSupplier] = useState('');
-  const [filterBranch, setFilterBranch] = useState('');
 
-  const filtered = useMemo(() => {
-    return imports.filter(r => {
-      const q = searchTerm.toLowerCase();
-      const matchSearch = !q || r.code.toLowerCase().includes(q) || r.supplierName.toLowerCase().includes(q);
-      const matchStatus = !filterStatus || r.status === filterStatus;
-      const matchSupplier = !filterSupplier || r.supplierId === filterSupplier;
-      const matchBranch = !filterBranch || r.branchId === filterBranch;
-      return matchSearch && matchStatus && matchSupplier && matchBranch;
-    });
-  }, [imports, searchTerm, filterStatus, filterSupplier, filterBranch]);
+  useEffect(() => {
+    fetchImports();
+  }, [fetchImports]);
 
-  const handleConfirm = (e, id) => {
+  const filtered = imports.filter(r => {
+    const q = searchTerm.toLowerCase();
+    const matchSearch = !q || r.code.toLowerCase().includes(q);
+    const matchStatus = !filterStatus || r.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const handleConfirm = async (e, id) => {
     e.stopPropagation();
     if (!window.confirm('Xác nhận phiếu nhập này?')) return;
-    confirmImport(id);
-    toast.success('Đã xác nhận phiếu nhập');
+    try {
+      await confirm(id);
+      toast.success('Đã xác nhận phiếu nhập');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const handleReceive = (e, id) => {
+  const handleReceive = async (e, id) => {
     e.stopPropagation();
     if (!window.confirm('Xác nhận đã nhập kho? Hàng hóa sẽ được cộng vào tồn kho.')) return;
-    receiveImport(id);
-    toast.success('Đã nhập kho thành công');
+    try {
+      await receive(id);
+      toast.success('Đã nhập kho thành công');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const handleCancel = (e, id) => {
+  const handleCancel = async (e, id) => {
     e.stopPropagation();
-    const r = imports.find(x => x.id === id);
-    if (!r) return;
-    if (r.status === 'received') {
-      toast.error('Không thể hủy phiếu đã nhập kho');
-      return;
+    if (!window.confirm('Hủy phiếu nhập này?')) return;
+    try {
+      await cancel(id);
+      toast.success('Đã hủy phiếu nhập');
+    } catch (err) {
+      toast.error(err.message);
     }
-    if (!window.confirm(`Hủy phiếu nhập ${r.code}?`)) return;
-    cancelImport(id);
-    toast.success('Đã hủy phiếu nhập');
   };
 
   return (
@@ -83,44 +89,29 @@ export default function ImportReceiptList() {
         </div>
 
         <div className="card p-3 min-w-0 flex items-center gap-3 flex-wrap">
-          <FilterPopover
-            filters={[
-              {
-                key: 'status', label: 'Trạng thái',
-                options: [
-                  { value: '', label: 'Tất cả trạng thái' },
-                  ...Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label })),
-                ],
-              },
-              {
-                key: 'supplier', label: 'Nhà cung cấp',
-                options: [
-                  { value: '', label: 'Tất cả NCC' },
-                  ...suppliers.map(s => ({ value: s.id, label: s.name })),
-                ],
-              },
-              {
-                key: 'branch', label: 'Chi nhánh/Kho',
-                options: [
-                  { value: '', label: 'Tất cả chi nhánh' },
-                  ...BRANCHES.map(b => ({ value: b.id, label: b.name })),
-                ],
-              },
-            ]}
-            activeFilters={{ status: filterStatus, supplier: filterSupplier, branch: filterBranch }}
-            onFilterChange={(key, value) => {
-              if (key === 'status') setFilterStatus(value);
-              if (key === 'supplier') setFilterSupplier(value);
-              if (key === 'branch') setFilterBranch(value);
-            }}
-            onClearAll={() => { setFilterStatus(''); setFilterSupplier(''); setFilterBranch(''); }}
-          />
+          <div className="flex items-center gap-2 flex-wrap">
+            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+              <button
+                key={key}
+                onClick={() => setFilterStatus(filterStatus === key ? '' : key)}
+                className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition"
+                style={{
+                  backgroundColor: filterStatus === key ? cfg.color : cfg.bg,
+                  color: filterStatus === key ? '#fff' : cfg.color,
+                }}
+              >
+                {cfg.label}
+              </button>
+            ))}
+          </div>
           <div className="relative flex-1 min-w-0" style={{ minWidth: '200px' }}>
             <Search size={18} className="text-muted absolute" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input type="text" placeholder="Tìm mã phiếu, nhà cung cấp..." className="w-full pl-10 h-36px"
+            <input type="text" placeholder="Tìm mã phiếu..." className="w-full pl-10 h-36px"
               value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
         </div>
+
+        {error && <div className="text-danger text-sm">{error}</div>}
 
         <div className="card p-0 overflow-hidden min-w-0">
           <div className="overflow-x-auto">
@@ -135,50 +126,50 @@ export default function ImportReceiptList() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(r => {
-                  return (
-                    <tr key={r.id} className="cursor-pointer transition hover-bg-primary-light"
-                      onClick={() => navigate(`/inventory/imports/${r.id}`)}>
-                      <td className="whitespace-nowrap font-semibold">{r.code}</td>
-                      <td className="whitespace-nowrap">{r.date}</td>
-                      <td className="hidden md:table-cell text-sm font-semibold">{fmtMoney(r.totalAmount)}</td>
-                      <td className="hidden md:table-cell text-sm text-muted">{r.createdBy}</td>
-                      <td className="text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
-                          {r.status === 'draft' && (
-                            <>
-                              <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
-                                onClick={e => { e.stopPropagation(); navigate(`/inventory/imports/${r.id}/edit`); }}
-                                title="Sửa">
-                                <Edit3 size={16} />
-                              </button>
-                              <button className="p-1.5 text-blue-500 hover-text-blue-700 cursor-pointer"
-                                onClick={e => handleConfirm(e, r.id)}
-                                title="Xác nhận">
-                                <CheckCircle size={16} />
-                              </button>
-                            </>
-                          )}
-                          {r.status === 'confirmed' && (
-                            <button className="p-1.5 text-green-500 hover-text-green-700 cursor-pointer"
-                              onClick={e => handleReceive(e, r.id)}
-                              title="Nhập kho">
-                              <PackageCheck size={16} />
+                {filtered.map(r => (
+                  <tr key={r.id} className="cursor-pointer transition hover-bg-primary-light"
+                    onClick={() => navigate(`/inventory/imports/${r.id}`)}>
+                    <td className="whitespace-nowrap font-semibold">{r.code}</td>
+                    <td className="whitespace-nowrap">{fmtDate(r.importDate)}</td>
+                    <td className="hidden md:table-cell text-sm font-semibold">
+                      {fmtMoney(r.items?.reduce((s, i) => s + (i.amount || 0), 0))}
+                    </td>
+                    <td className="hidden md:table-cell text-sm text-muted">{r.createdByName}</td>
+                    <td className="text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1">
+                        {r.status === 'DRAFT' && (
+                          <>
+                            <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
+                              onClick={e => { e.stopPropagation(); navigate(`/inventory/imports/${r.id}/edit`); }}
+                              title="Sửa">
+                              <Edit3 size={16} />
                             </button>
-                          )}
-                          {r.status !== 'received' && r.status !== 'cancelled' && (
-                            <button className="p-1.5 text-danger hover-text-danger/80 cursor-pointer"
-                              onClick={e => handleCancel(e, r.id)}
-                              title="Hủy">
-                              <XCircle size={16} />
+                            <button className="p-1.5 text-blue-500 hover-text-blue-700 cursor-pointer"
+                              onClick={e => handleConfirm(e, r.id)}
+                              title="Xác nhận">
+                              <CheckCircle size={16} />
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {filtered.length === 0 && (
+                          </>
+                        )}
+                        {r.status === 'CONFIRMED' && (
+                          <button className="p-1.5 text-green-500 hover-text-green-700 cursor-pointer"
+                            onClick={e => handleReceive(e, r.id)}
+                            title="Nhập kho">
+                            <PackageCheck size={16} />
+                          </button>
+                        )}
+                        {r.status !== 'RECEIVED' && r.status !== 'CANCELLED' && (
+                          <button className="p-1.5 text-danger hover-text-danger/80 cursor-pointer"
+                            onClick={e => handleCancel(e, r.id)}
+                            title="Hủy">
+                            <XCircle size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && !loading && (
                   <tr><td colSpan={5} className="text-center text-muted py-8">Không tìm thấy phiếu nhập kho</td></tr>
                 )}
               </tbody>
