@@ -74,6 +74,12 @@ import StocktakeList from './pages/inventory/stocktakes/StocktakeList';
 import StocktakeCreate from './pages/inventory/stocktakes/StocktakeCreate';
 import StocktakeDetail from './pages/inventory/stocktakes/StocktakeDetail';
 import StocktakeEdit from './pages/inventory/stocktakes/StocktakeEdit';
+import InventoryReportDashboard from './pages/inventory/reports/InventoryReportDashboard';
+import StockMovementReport from './pages/inventory/reports/StockMovementReport';
+import TopIngredients from './pages/inventory/reports/TopIngredients';
+import LowStockReport from './pages/inventory/reports/LowStockReport';
+import StocktakeReport from './pages/inventory/reports/StocktakeReport';
+import IngredientReport from './pages/inventory/reports/IngredientReport';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -138,6 +144,12 @@ function AppRoutes() {
         <Route path="inventory/stocktakes/create" element={<StocktakeCreate />} />
         <Route path="inventory/stocktakes/:id" element={<StocktakeDetail />} />
         <Route path="inventory/stocktakes/:id/edit" element={<StocktakeEdit />} />
+        <Route path="inventory/reports" element={<InventoryReportDashboard />} />
+        <Route path="inventory/reports/movements" element={<StockMovementReport />} />
+        <Route path="inventory/reports/top-ingredients" element={<TopIngredients />} />
+        <Route path="inventory/reports/low-stock" element={<LowStockReport />} />
+        <Route path="inventory/reports/stocktake" element={<StocktakeReport />} />
+        <Route path="inventory/reports/ingredient/:ingredientId" element={<IngredientReport />} />
         <Route path="schedules" element={<Schedules />} />
         <Route path="schedules/create" element={<ScheduleCreate />} />
         <Route path="schedules/:id" element={<ScheduleDetail />} />

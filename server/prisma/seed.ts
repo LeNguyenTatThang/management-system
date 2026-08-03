@@ -58,6 +58,7 @@ const permissionGroups = [
   { group: 'inventory', module: 'adjustment', label: 'Điều chỉnh kho', permissions: ['read', 'create', 'update', 'delete'] },
   { group: 'inventory', module: 'stockLedger', label: 'Biến động kho', permissions: ['read'] },
   { group: 'inventory', module: 'stocktake', label: 'Kiểm kê kho', permissions: ['read', 'create', 'update', 'delete'] },
+  { group: 'inventory', module: 'report', label: 'Báo cáo kho', permissions: ['read'] },
 ];
 
 // Permissions granted to the MANAGER role (seed development only)

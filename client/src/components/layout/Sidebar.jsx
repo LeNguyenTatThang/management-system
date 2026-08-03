@@ -1,8 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
-  Coffee, LayoutDashboard, UtensilsCrossed, 
-  ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, Shield, Calendar, ClipboardCheck, ClipboardList, HeartHandshake, ArrowUpDown
-} from 'lucide-react';
+Coffee, LayoutDashboard, UtensilsCrossed, 
+   ShoppingCart, Package, Users, FileText, Settings, HelpCircle, LogOut, Store, Palette, Tag, Gift, Shield, Calendar, ClipboardCheck, ClipboardList, HeartHandshake, ArrowUpDown, BarChart3
+ } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navGroups = [
@@ -38,6 +38,7 @@ const navGroups = [
       { name: 'Điều chỉnh kho', icon: ClipboardCheck, path: '/inventory/adjustments' },
       { name: 'Biến động kho', icon: ArrowUpDown, path: '/inventory/stock-ledger' },
       { name: 'Kiểm kê kho', icon: ClipboardCheck, path: '/inventory/stocktakes' },
+      { name: 'Báo cáo kho', icon: BarChart3, path: '/inventory/reports' },
     ],
   },
   {
