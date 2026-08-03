@@ -15,6 +15,8 @@ import { ProductModule } from './modules/product/product.module';
 import { IngredientModule } from './modules/ingredient/ingredient.module';
 import { RecipeModule } from './modules/recipe/recipe.module';
 import { InventoryImportModule } from './modules/inventory-import/inventory-import.module';
+import { InventoryExportModule } from './modules/inventory-export/inventory-export.module';
+import { InventoryAdjustmentModule } from './modules/inventory-adjustment/inventory-adjustment.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { InventoryImportModule } from './modules/inventory-import/inventory-impo
     IngredientModule,
     RecipeModule,
     InventoryImportModule,
+    InventoryExportModule,
+    InventoryAdjustmentModule,
   ],
   providers: [
     {

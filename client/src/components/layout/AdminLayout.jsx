@@ -32,6 +32,7 @@ const navGroups = [
       { name: 'Nguyên liệu', icon: Package, path: '/ingredients' },
       { name: 'Nhập kho', icon: ClipboardList, path: '/inventory/imports' },
       { name: 'Xuất kho', icon: LogOut, path: '/inventory/exports' },
+      { name: 'Điều chỉnh kho', icon: ClipboardCheck, path: '/inventory/adjustments' },
       { name: 'Công thức', icon: UtensilsCrossed, path: '/recipes' },
       { name: 'Món', icon: Coffee, path: '/products' },
       { name: 'Nhà cung cấp', icon: Store, path: '/suppliers' },

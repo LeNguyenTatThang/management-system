@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useInventoryExport, EXPORT_TYPES } from '../../../contexts/InventoryExportContext';
+import { useInventoryAdjustment, ADJUSTMENT_DIRECTIONS } from '../../../contexts/InventoryAdjustmentContext';
 import { useIngredient } from '../../../contexts/IngredientContext';
 import { ArrowLeft, Calendar, FileText, Package, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
 import FormSection from '../../../components/ui/FormSection';
 import { toast } from 'react-hot-toast';
 
-export default function ExportReceiptCreate() {
+export default function AdjustmentCreate() {
   const navigate = useNavigate();
-  const { createExport } = useInventoryExport();
+  const { create } = useInventoryAdjustment();
   const { ingredients, units } = useIngredient();
 
   const todayStr = () => {
@@ -17,10 +17,10 @@ export default function ExportReceiptCreate() {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
   const [date] = useState(todayStr());
-  const [exportType, setExportType] = useState('USE');
+  const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [items, setItems] = useState([
-    { ingredientId: '', unitId: '', requestedQuantity: '', currentStock: 0, note: '' },
+    { ingredientId: '', unitId: '', quantity: '', direction: 'INCREASE', currentStock: 0, note: '' },
   ]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -36,14 +36,10 @@ export default function ExportReceiptCreate() {
           ...updated[index],
           ingredientId: value,
           unitId: ing?.unitId ? String(ing.unitId) : '',
-          requestedQuantity: '',
+          quantity: '',
           currentStock: ing?.stock ?? 0,
           note: '',
         };
-      } else if (field === 'unitId') {
-        updated[index] = { ...updated[index], unitId: value };
-      } else if (field === 'requestedQuantity') {
-        updated[index] = { ...updated[index], requestedQuantity: value };
       } else {
         updated[index] = { ...updated[index], [field]: value };
       }
@@ -52,7 +48,7 @@ export default function ExportReceiptCreate() {
   };
 
   const addRow = () => {
-    setItems((prev) => [...prev, { ingredientId: '', unitId: '', requestedQuantity: '', currentStock: 0, note: '' }]);
+    setItems((prev) => [...prev, { ingredientId: '', unitId: '', quantity: '', direction: 'INCREASE', currentStock: 0, note: '' }]);
   };
 
   const removeRow = (index) => {
@@ -66,13 +62,13 @@ export default function ExportReceiptCreate() {
   };
 
   const validItemsCount = items.filter((i) => i.ingredientId).length;
-  const totalQuantity = items.reduce((s, item) => s + (parseFloat(item.requestedQuantity) || 0), 0);
+  const totalQuantity = items.reduce((s, item) => s + (parseFloat(item.quantity) || 0), 0);
 
   const getStockError = (item) => {
-    if (!item.ingredientId || !item.requestedQuantity) return '';
-    const qty = parseFloat(item.requestedQuantity);
+    if (!item.ingredientId || !item.quantity) return '';
+    const qty = parseFloat(item.quantity);
     if (qty <= 0) return 'SL phải > 0';
-    if (qty > item.currentStock) {
+    if (item.direction === 'DECREASE' && qty > item.currentStock) {
       return `Không đủ tồn kho (còn ${item.currentStock})`;
     }
     return '';
@@ -80,16 +76,19 @@ export default function ExportReceiptCreate() {
 
   const validate = () => {
     const errs = {};
-    if (!exportType) errs.exportType = 'Vui lòng chọn loại xuất';
+    if (!reason.trim()) errs.reason = 'Vui lòng nhập lý do điều chỉnh';
     if (validItemsCount === 0) errs.items = 'Vui lòng thêm ít nhất 1 nguyên liệu';
 
     items.forEach((item, i) => {
       if (item.ingredientId) {
-        const qty = parseFloat(item.requestedQuantity);
-        if (!item.requestedQuantity || qty <= 0) {
+        const qty = parseFloat(item.quantity);
+        if (!item.quantity || qty <= 0) {
           errs[`qty_${i}`] = 'SL phải > 0';
-        } else if (qty > item.currentStock) {
+        } else if (item.direction === 'DECREASE' && qty > item.currentStock) {
           errs[`qty_${i}`] = `Tồn không đủ (còn ${item.currentStock})`;
+        }
+        if (!item.unitId) {
+          errs[`unit_${i}`] = 'Chọn đơn vị';
         }
       }
     });
@@ -102,21 +101,22 @@ export default function ExportReceiptCreate() {
     if (!validate()) return;
     setSaving(true);
     try {
-      await createExport({
-        exportDate: new Date().toISOString(),
-        exportType,
+      await create({
+        adjustmentDate: new Date().toISOString(),
+        reason: reason.trim(),
         note: note.trim() || undefined,
         items: items
           .filter((i) => i.ingredientId)
           .map((i) => ({
             ingredientId: Number(i.ingredientId),
-            quantity: parseFloat(i.requestedQuantity),
-            unitId: i.unitId ? Number(i.unitId) : undefined,
+            quantity: parseFloat(i.quantity),
+            unitId: Number(i.unitId),
+            direction: i.direction,
             note: i.note.trim() || undefined,
           })),
       });
-      toast.success('Đã tạo phiếu xuất kho');
-      navigate('/inventory/exports');
+      toast.success('Đã tạo phiếu điều chỉnh kho');
+      navigate('/inventory/adjustments');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -129,30 +129,30 @@ export default function ExportReceiptCreate() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2 text-sm text-muted">
-            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/inventory/exports')}>
-              Xuất kho
+            <button className="hover-text-primary cursor-pointer" onClick={() => navigate('/inventory/adjustments')}>
+              Điều chỉnh kho
             </button>
             <span>&gt;</span>
-            <span className="text-main font-semibold">Tạo phiếu xuất</span>
+            <span className="text-main font-semibold">Tạo phiếu điều chỉnh</span>
           </div>
           <button
             className="flex items-center gap-1.5 text-sm text-muted hover-text-primary cursor-pointer"
-            onClick={() => navigate('/inventory/exports')}
+            onClick={() => navigate('/inventory/adjustments')}
           >
             <ArrowLeft size={16} /> Quay lại
           </button>
         </div>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Tạo phiếu xuất kho</h1>
-          <p className="text-muted text-sm mt-1">Tạo phiếu xuất nguyên liệu, hàng hóa ra khỏi kho</p>
+          <h1 className="text-2xl font-bold">Tạo phiếu điều chỉnh kho</h1>
+          <p className="text-muted text-sm mt-1">Điều chỉnh tăng/giảm tồn kho nguyên liệu</p>
         </div>
 
-        <FormSection icon={Calendar} title="THÔNG TIN PHIẾU XUẤT" className="mb-5">
+        <FormSection icon={Calendar} title="THÔNG TIN PHIẾU ĐIỀU CHỈNH" className="mb-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold mb-1.5">
-                Ngày xuất <span className="text-danger">*</span>
+                Ngày điều chỉnh <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -164,25 +164,21 @@ export default function ExportReceiptCreate() {
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1.5">
-                Loại xuất <span className="text-danger">*</span>
+                Lý do điều chỉnh <span className="text-danger">*</span>
               </label>
-              <select
-                className={`w-full modal-input ${errors.exportType ? 'border-danger' : ''}`}
-                value={exportType}
-                onChange={(e) => setExportType(e.target.value)}
-              >
-                {EXPORT_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-              {errors.exportType && <p className="text-xs text-danger mt-1">{errors.exportType}</p>}
+              <input
+                type="text"
+                className={`w-full modal-input ${errors.reason ? 'border-danger' : ''}`}
+                value={reason}
+                placeholder="Ví dụ: Kiểm kê, điều chỉnh chênh lệch..."
+                onChange={(e) => setReason(e.target.value)}
+              />
+              {errors.reason && <p className="text-xs text-danger mt-1">{errors.reason}</p>}
             </div>
           </div>
         </FormSection>
 
-        <FormSection icon={Package} title="NGUYÊN LIỆU XUẤT" subtitle="Thêm ít nhất 1 nguyên liệu" className="mb-5">
+        <FormSection icon={Package} title="NGUYÊN LIỆU ĐIỀU CHỈNH" subtitle="Thêm ít nhất 1 nguyên liệu" className="mb-5">
           {errors.items && (
             <div className="flex items-start gap-2 p-3 bg-danger-light rounded-lg mb-3">
               <AlertTriangle size={16} className="text-danger flex-shrink-0 mt-0.5" />
@@ -191,24 +187,15 @@ export default function ExportReceiptCreate() {
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-full" style={{ minWidth: '700px' }}>
+            <table className="w-full" style={{ minWidth: '800px' }}>
               <thead>
                 <tr className="text-xs font-semibold text-muted">
-                  <th className="text-left p-2" style={{ width: '25%' }}>
-                    Nguyên liệu
-                  </th>
-                  <th className="text-left p-2" style={{ width: '10%' }}>
-                    ĐVT
-                  </th>
-                  <th className="text-left p-2" style={{ width: '12%' }}>
-                    Tồn kho
-                  </th>
-                  <th className="text-left p-2" style={{ width: '14%' }}>
-                    SL xuất
-                  </th>
-                  <th className="text-left p-2" style={{ width: '17%' }}>
-                    Ghi chú
-                  </th>
+                  <th className="text-left p-2" style={{ width: '22%' }}>Nguyên liệu</th>
+                  <th className="text-left p-2" style={{ width: '10%' }}>ĐVT</th>
+                  <th className="text-left p-2" style={{ width: '10%' }}>Tồn kho</th>
+                  <th className="text-left p-2" style={{ width: '12%' }}>Hướng</th>
+                  <th className="text-left p-2" style={{ width: '12%' }}>Số lượng</th>
+                  <th className="text-left p-2" style={{ width: '17%' }}>Ghi chú</th>
                   <th className="text-center p-2" style={{ width: '5%' }}></th>
                 </tr>
               </thead>
@@ -233,7 +220,7 @@ export default function ExportReceiptCreate() {
                       </td>
                       <td className="p-1">
                         <select
-                          className="w-full modal-input text-sm"
+                          className={`w-full modal-input text-sm ${errors[`unit_${i}`] ? 'border-danger' : ''}`}
                           value={item.unitId}
                           onChange={(e) => handleItemChange(i, 'unitId', e.target.value)}
                         >
@@ -244,6 +231,9 @@ export default function ExportReceiptCreate() {
                             </option>
                           ))}
                         </select>
+                        {errors[`unit_${i}`] && (
+                          <p className="text-xs text-danger whitespace-nowrap">{errors[`unit_${i}`]}</p>
+                        )}
                       </td>
                       <td className="p-1">
                         <input
@@ -254,14 +244,25 @@ export default function ExportReceiptCreate() {
                         />
                       </td>
                       <td className="p-1">
+                        <select
+                          className="w-full modal-input text-sm"
+                          value={item.direction}
+                          onChange={(e) => handleItemChange(i, 'direction', e.target.value)}
+                        >
+                          {ADJUSTMENT_DIRECTIONS.map((d) => (
+                            <option key={d.value} value={d.value}>{d.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="p-1">
                         <input
                           type="number"
                           step="0.01"
                           min="0"
                           className={`w-full modal-input text-sm text-right ${(errors[`qty_${i}`] || stockErr) ? 'border-danger' : ''}`}
-                          value={item.requestedQuantity}
+                          value={item.quantity}
                           placeholder="0"
-                          onChange={(e) => handleItemChange(i, 'requestedQuantity', e.target.value)}
+                          onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
                         />
                         {(errors[`qty_${i}`] || stockErr) && (
                           <p className="text-xs text-danger whitespace-nowrap">{errors[`qty_${i}`] || stockErr}</p>
@@ -327,7 +328,7 @@ export default function ExportReceiptCreate() {
           <button
             type="button"
             className="btn btn-outline modal-btn px-6"
-            onClick={() => navigate('/inventory/exports')}
+            onClick={() => navigate('/inventory/adjustments')}
           >
             Hủy
           </button>
@@ -337,7 +338,7 @@ export default function ExportReceiptCreate() {
             disabled={saving}
             onClick={handleSave}
           >
-            {saving ? 'Đang lưu...' : 'Tạo phiếu xuất'}
+            {saving ? 'Đang lưu...' : 'Tạo phiếu điều chỉnh'}
           </button>
         </div>
       </div>

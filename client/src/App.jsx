@@ -14,6 +14,7 @@ import { AttendanceProvider } from './contexts/AttendanceContext';
 import { LeaveProvider } from './contexts/LeaveContext';
 import { ImportReceiptProvider } from './contexts/ImportReceiptContext';
 import { InventoryExportProvider } from './contexts/InventoryExportContext';
+import { InventoryAdjustmentProvider } from './contexts/InventoryAdjustmentContext';
 import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/dashboard/Dashboard';
 import MenuProducts from './pages/dishes/MenuProducts';
@@ -61,6 +62,10 @@ import ExportReceiptList from './pages/inventory/exports/ExportReceiptList';
 import ExportReceiptCreate from './pages/inventory/exports/ExportReceiptCreate';
 import ExportReceiptDetail from './pages/inventory/exports/ExportReceiptDetail';
 import ExportReceiptEdit from './pages/inventory/exports/ExportReceiptEdit';
+import AdjustmentList from './pages/inventory/adjustments/AdjustmentList';
+import AdjustmentCreate from './pages/inventory/adjustments/AdjustmentCreate';
+import AdjustmentDetail from './pages/inventory/adjustments/AdjustmentDetail';
+import AdjustmentEdit from './pages/inventory/adjustments/AdjustmentEdit';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -115,6 +120,10 @@ function AppRoutes() {
         <Route path="inventory/exports/create" element={<ExportReceiptCreate />} />
         <Route path="inventory/exports/:id" element={<ExportReceiptDetail />} />
         <Route path="inventory/exports/:id/edit" element={<ExportReceiptEdit />} />
+        <Route path="inventory/adjustments" element={<AdjustmentList />} />
+        <Route path="inventory/adjustments/create" element={<AdjustmentCreate />} />
+        <Route path="inventory/adjustments/:id" element={<AdjustmentDetail />} />
+        <Route path="inventory/adjustments/:id/edit" element={<AdjustmentEdit />} />
         <Route path="schedules" element={<Schedules />} />
         <Route path="schedules/create" element={<ScheduleCreate />} />
         <Route path="schedules/:id" element={<ScheduleDetail />} />
@@ -150,7 +159,9 @@ function App() {
           <LeaveProvider>
           <ImportReceiptProvider>
           <InventoryExportProvider>
+          <InventoryAdjustmentProvider>
           <AppRoutes />
+          </InventoryAdjustmentProvider>
           </InventoryExportProvider>
           </ImportReceiptProvider>
           </LeaveProvider>

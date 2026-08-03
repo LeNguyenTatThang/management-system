@@ -54,6 +54,8 @@ const permissionGroups = [
   { group: 'product', module: 'recipe', label: 'Công thức', permissions: ['read', 'create', 'update', 'delete'] },
   { group: 'product', module: 'ingredient', label: 'Nguyên liệu', permissions: ['read', 'create', 'update', 'delete'] },
   { group: 'inventory', module: 'import', label: 'Nhập kho', permissions: ['read', 'create', 'update', 'delete'] },
+  { group: 'inventory', module: 'export', label: 'Xuất kho', permissions: ['read', 'create', 'update', 'delete'] },
+  { group: 'inventory', module: 'adjustment', label: 'Điều chỉnh kho', permissions: ['read', 'create', 'update', 'delete'] },
 ];
 
 // Permissions granted to the MANAGER role (seed development only)

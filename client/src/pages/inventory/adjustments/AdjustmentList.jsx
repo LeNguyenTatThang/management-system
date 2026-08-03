@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useInventoryExport, EXPORT_TYPES, EXPORT_TYPE_LABELS } from '../../../contexts/InventoryExportContext';
-import { Plus, Search, Eye, Edit3, CheckCircle, XCircle, LogOut } from 'lucide-react';
+import { useInventoryAdjustment } from '../../../contexts/InventoryAdjustmentContext';
+import { Plus, Search, Eye, Edit3, CheckCircle, XCircle } from 'lucide-react';
 import PageContainer from '../../../components/layout/PageContainer';
 import ResponsiveTable from '../../../components/ui/ResponsiveTable';
 import FilterPopover from '../../../components/ui/FilterPopover';
@@ -9,8 +9,7 @@ import { toast } from 'react-hot-toast';
 
 const STATUS_CONFIG = {
   DRAFT: { label: 'Nháp', color: '#6b7280', bg: '#f3f4f6' },
-  CONFIRMED: { label: 'Đã xác nhận', color: '#3b82f6', bg: '#eff6ff' },
-  EXPORTED: { label: 'Đã xuất kho', color: '#10b981', bg: '#ecfdf5' },
+  CONFIRMED: { label: 'Đã xác nhận', color: '#10b981', bg: '#ecfdf5' },
   CANCELLED: { label: 'Đã hủy', color: '#ef4444', bg: '#fef2f2' },
 };
 
@@ -20,59 +19,41 @@ function fmtDate(dateStr) {
   return d.toLocaleDateString('vi-VN');
 }
 
-export default function ExportReceiptList() {
+export default function AdjustmentList() {
   const navigate = useNavigate();
-  const { exports, loading, error, fetchExports, confirmExport, executeExport, cancelExport } = useInventoryExport();
+  const { adjustments, loading, error, fetchAdjustments, confirm, cancel } = useInventoryAdjustment();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterExportType, setFilterExportType] = useState('');
 
   useEffect(() => {
-    fetchExports();
-  }, [fetchExports]);
+    fetchAdjustments();
+  }, [fetchAdjustments]);
 
   const filtered = useMemo(() => {
-    return exports.filter((r) => {
+    return adjustments.filter((r) => {
       const q = searchTerm.toLowerCase();
-      const matchSearch = !q || r.code?.toLowerCase().includes(q);
+      const matchSearch = !q || r.code?.toLowerCase().includes(q) || r.reason?.toLowerCase().includes(q);
       const matchStatus = !filterStatus || r.status === filterStatus;
-      const matchType = !filterExportType || r.exportType === filterExportType;
-      return matchSearch && matchStatus && matchType;
+      return matchSearch && matchStatus;
     });
-  }, [exports, searchTerm, filterStatus, filterExportType]);
+  }, [adjustments, searchTerm, filterStatus]);
 
   const stats = useMemo(() => {
     return {
-      total: exports.length,
-      draft: exports.filter((r) => r.status === 'DRAFT').length,
-      confirmed: exports.filter((r) => r.status === 'CONFIRMED').length,
-      exported: exports.filter((r) => r.status === 'EXPORTED').length,
+      total: adjustments.length,
+      draft: adjustments.filter((r) => r.status === 'DRAFT').length,
+      confirmed: adjustments.filter((r) => r.status === 'CONFIRMED').length,
+      cancelled: adjustments.filter((r) => r.status === 'CANCELLED').length,
     };
-  }, [exports]);
+  }, [adjustments]);
 
   const handleConfirm = async (e, id) => {
     e.stopPropagation();
-    if (!window.confirm('Xác nhận phiếu xuất này?')) return;
+    if (!window.confirm('Xác nhận phiếu điều chỉnh? Sau khi xác nhận, tồn kho sẽ được cập nhật.')) return;
     try {
-      await confirmExport(id);
-      toast.success('Đã xác nhận phiếu xuất');
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
-  const handleExport = async (e, id) => {
-    e.stopPropagation();
-    if (
-      !window.confirm(
-        'Bạn có chắc chắn muốn xuất kho?\nSau khi thực hiện, tồn kho sẽ được cập nhật và phiếu không thể chỉnh sửa.',
-      )
-    )
-      return;
-    try {
-      await executeExport(id);
-      toast.success('Đã xuất kho thành công');
+      await confirm(id);
+      toast.success('Đã xác nhận và cập nhật tồn kho');
     } catch (err) {
       toast.error(err.message);
     }
@@ -80,16 +61,12 @@ export default function ExportReceiptList() {
 
   const handleCancel = async (e, id) => {
     e.stopPropagation();
-    const r = exports.find((x) => x.id === id);
+    const r = adjustments.find((x) => x.id === id);
     if (!r) return;
-    if (r.status === 'EXPORTED') {
-      toast.error('Không thể hủy phiếu đã xuất kho');
-      return;
-    }
-    if (!window.confirm(`Hủy phiếu xuất ${r.code}?`)) return;
+    if (!window.confirm(`Hủy phiếu điều chỉnh ${r.code}?`)) return;
     try {
-      await cancelExport(id);
-      toast.success('Đã hủy phiếu xuất');
+      await cancel(id);
+      toast.success('Đã hủy phiếu điều chỉnh');
     } catch (err) {
       toast.error(err.message);
     }
@@ -100,18 +77,18 @@ export default function ExportReceiptList() {
       <div className="flex flex-col gap-4 w-full min-w-0">
         <div className="flex flex-row items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-xl font-bold">Xuất kho</h2>
-            <p className="text-muted text-sm">Quản lý các phiếu xuất nguyên liệu và hàng hóa</p>
+            <h2 className="text-xl font-bold">Điều chỉnh kho</h2>
+            <p className="text-muted text-sm">Quản lý các phiếu điều chỉnh tồn kho nguyên liệu</p>
           </div>
           <button
             className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
-            onClick={() => navigate('/inventory/exports/create')}
+            onClick={() => navigate('/inventory/adjustments/create')}
           >
-            <Plus size={18} /> Tạo phiếu xuất
+            <Plus size={18} /> Tạo phiếu điều chỉnh
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div className="card p-3 flex items-center gap-3">
             <div className="text-2xl font-bold text-main">{stats.total}</div>
             <div className="text-xs text-muted">Tổng phiếu</div>
@@ -121,12 +98,8 @@ export default function ExportReceiptList() {
             <div className="text-xs text-muted">Phiếu nháp</div>
           </div>
           <div className="card p-3 flex items-center gap-3">
-            <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>{stats.confirmed}</div>
-            <div className="text-xs text-muted">Chờ xuất</div>
-          </div>
-          <div className="card p-3 flex items-center gap-3">
-            <div className="text-2xl font-bold" style={{ color: '#10b981' }}>{stats.exported}</div>
-            <div className="text-xs text-muted">Đã xuất</div>
+            <div className="text-2xl font-bold" style={{ color: '#10b981' }}>{stats.confirmed}</div>
+            <div className="text-xs text-muted">Đã xác nhận</div>
           </div>
         </div>
 
@@ -141,24 +114,12 @@ export default function ExportReceiptList() {
                   ...Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label })),
                 ],
               },
-              {
-                key: 'exportType',
-                label: 'Loại xuất',
-                options: [
-                  { value: '', label: 'Tất cả loại' },
-                  ...EXPORT_TYPES.map((t) => ({ value: t.value, label: t.label })),
-                ],
-              },
             ]}
-            activeFilters={{ status: filterStatus, exportType: filterExportType }}
+            activeFilters={{ status: filterStatus }}
             onFilterChange={(key, value) => {
               if (key === 'status') setFilterStatus(value);
-              if (key === 'exportType') setFilterExportType(value);
             }}
-            onClearAll={() => {
-              setFilterStatus('');
-              setFilterExportType('');
-            }}
+            onClearAll={() => setFilterStatus('')}
           />
           <div className="relative flex-1 min-w-0" style={{ minWidth: '200px' }}>
             <Search
@@ -168,7 +129,7 @@ export default function ExportReceiptList() {
             />
             <input
               type="text"
-              placeholder="Tìm mã phiếu..."
+              placeholder="Tìm mã phiếu, lý do..."
               className="w-full pl-10 h-36px"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -184,36 +145,40 @@ export default function ExportReceiptList() {
               <thead>
                 <tr>
                   <th>Mã phiếu</th>
-                  <th>Ngày xuất</th>
-                  <th>Loại xuất</th>
+                  <th>Ngày điều chỉnh</th>
+                  <th>Lý do</th>
                   <th className="hidden md:table-cell">Số mặt hàng</th>
                   <th className="hidden md:table-cell">Người tạo</th>
+                  <th>Trạng thái</th>
                   <th className="text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((r) => {
-                  const typeLabel = EXPORT_TYPE_LABELS[r.exportType] || r.exportType;
+                  const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.DRAFT;
                   return (
                     <tr
                       key={r.id}
                       className="cursor-pointer transition hover-bg-primary-light"
-                      onClick={() => navigate(`/inventory/exports/${r.id}`)}
+                      onClick={() => navigate(`/inventory/adjustments/${r.id}`)}
                     >
                       <td className="whitespace-nowrap font-semibold">{r.code}</td>
-                      <td className="whitespace-nowrap">{fmtDate(r.exportDate)}</td>
-                      <td>
-                        <span className="badge badge-neutral text-xs">{typeLabel}</span>
-                      </td>
+                      <td className="whitespace-nowrap">{fmtDate(r.adjustmentDate)}</td>
+                      <td className="text-sm max-w-200px truncate">{r.reason}</td>
                       <td className="hidden md:table-cell text-sm">{r.items?.length || 0}</td>
                       <td className="hidden md:table-cell text-sm text-muted">{r.createdByName}</td>
+                      <td>
+                        <span className="badge text-xs" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
+                          {cfg.label}
+                        </span>
+                      </td>
                       <td className="text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             className="p-1.5 text-muted hover-text-primary cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/inventory/exports/${r.id}`);
+                              navigate(`/inventory/adjustments/${r.id}`);
                             }}
                             title="Xem chi tiết"
                           >
@@ -225,7 +190,7 @@ export default function ExportReceiptList() {
                                 className="p-1.5 text-muted hover-text-primary cursor-pointer"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/inventory/exports/${r.id}/edit`);
+                                  navigate(`/inventory/adjustments/${r.id}/edit`);
                                 }}
                                 title="Sửa"
                               >
@@ -240,16 +205,7 @@ export default function ExportReceiptList() {
                               </button>
                             </>
                           )}
-                          {r.status === 'CONFIRMED' && (
-                            <button
-                              className="p-1.5 text-orange-500 hover-text-orange-700 cursor-pointer"
-                              onClick={(e) => handleExport(e, r.id)}
-                              title="Xuất kho"
-                            >
-                              <LogOut size={16} />
-                            </button>
-                          )}
-                          {r.status !== 'EXPORTED' && r.status !== 'CANCELLED' && (
+                          {r.status !== 'CANCELLED' && r.status !== 'CONFIRMED' && (
                             <button
                               className="p-1.5 text-danger hover-text-danger/80 cursor-pointer"
                               onClick={(e) => handleCancel(e, r.id)}
@@ -265,8 +221,8 @@ export default function ExportReceiptList() {
                 })}
                 {filtered.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={6} className="text-center text-muted py-8">
-                      Không tìm thấy phiếu xuất kho
+                    <td colSpan={7} className="text-center text-muted py-8">
+                      Không tìm thấy phiếu điều chỉnh kho
                     </td>
                   </tr>
                 )}

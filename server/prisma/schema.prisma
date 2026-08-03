@@ -118,6 +118,17 @@ enum ExportType {
   OTHER
 }
 
+enum AdjustmentType {
+  INCREASE
+  DECREASE
+}
+
+enum AdjustmentStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
 enum OrderStatus {
   PENDING
   PROCESSING
@@ -210,10 +221,12 @@ model Employee {
   attendance       Attendance[]
   leaveRequests    LeaveRequest[]
   orders           Order[]
-  importsCreated   InventoryImport[] @relation("ImportCreatedBy")
-  exportsCreated   InventoryExport[] @relation("ExportCreatedBy")
-  exportsConfirmed InventoryExport[] @relation("ExportConfirmedBy")
-  exportsExecuted  InventoryExport[] @relation("ExportExecutedBy")
+  importsCreated    InventoryImport[]    @relation("ImportCreatedBy")
+  exportsCreated    InventoryExport[]    @relation("ExportCreatedBy")
+  exportsConfirmed  InventoryExport[]    @relation("ExportConfirmedBy")
+  exportsExecuted   InventoryExport[]    @relation("ExportExecutedBy")
+  adjustmentsCreated   InventoryAdjustment[] @relation("AdjustmentCreatedBy")
+  adjustmentsConfirmed InventoryAdjustment[] @relation("AdjustmentConfirmedBy")
 
   @@index([roleId])
   @@index([status])
@@ -386,9 +399,10 @@ model Ingredient {
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
-  recipeIngredients RecipeIngredient[]
-  importItems       InventoryImportItem[]
-  exportItems       InventoryExportItem[]
+  recipeIngredients    RecipeIngredient[]
+  importItems          InventoryImportItem[]
+  exportItems          InventoryExportItem[]
+  adjustmentItems      InventoryAdjustmentItem[]
 
   @@index([unitId])
   @@index([supplierId])
@@ -406,10 +420,11 @@ model Unit {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  ingredients       Ingredient[]
-  recipeIngredients RecipeIngredient[]
-  importItems       InventoryImportItem[]
-  exportItems       InventoryExportItem[]
+  ingredients         Ingredient[]
+  recipeIngredients   RecipeIngredient[]
+  importItems         InventoryImportItem[]
+  exportItems         InventoryExportItem[]
+  adjustmentItems     InventoryAdjustmentItem[]
 
   @@map("units")
 }
@@ -558,6 +573,49 @@ model InventoryExportItem {
   @@index([exportId])
   @@index([ingredientId])
   @@map("inventory_export_items")
+}
+
+model InventoryAdjustment {
+  id             Int              @id @default(autoincrement())
+  code           String?          @unique
+  adjustmentDate DateTime
+  type           AdjustmentType
+  reason         String?          @db.Text
+  note           String?          @db.Text
+  status         AdjustmentStatus @default(DRAFT)
+  createdById    Int?
+  createdBy      Employee?        @relation("AdjustmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdByName  String
+  confirmedById  Int?
+  confirmedBy    Employee?        @relation("AdjustmentConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  confirmedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  items InventoryAdjustmentItem[]
+
+  @@index([createdById])
+  @@index([confirmedById])
+  @@index([status])
+  @@index([adjustmentDate])
+  @@map("inventory_adjustments")
+}
+
+model InventoryAdjustmentItem {
+  id           Int                 @id @default(autoincrement())
+  adjustmentId Int
+  adjustment   InventoryAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+  ingredientId Int
+  ingredient   Ingredient          @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  quantity     Decimal             @db.Decimal(12, 3)
+  unitId       Int
+  unit         Unit                @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  direction    AdjustmentType
+  note         String?
+
+  @@index([adjustmentId])
+  @@index([ingredientId])
+  @@map("inventory_adjustment_items")
 }
 
 // ============================================================
