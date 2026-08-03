@@ -1,64 +1,70 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-
-const STORAGE_KEY = 'dezlab_schedules';
-
-function loadSchedules() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function saveSchedules(data) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
-}
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import {
+  getWorkSchedules,
+  createWorkSchedule,
+  updateWorkSchedule,
+  deleteWorkSchedule,
+} from '../services/scheduleService';
 
 const ScheduleContext = createContext(null);
 
 export function ScheduleProvider({ children }) {
-  const [schedules, setSchedules] = useState(loadSchedules);
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const sync = useCallback((fn) => {
-    setSchedules(prev => {
-      const next = fn(prev);
-      saveSchedules(next);
-      return next;
-    });
+  const fetchSchedules = useCallback(async (params) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getWorkSchedules(params);
+      setSchedules(data);
+    } catch (e) {
+      setError(e.message || 'Không thể tải danh sách lịch làm việc');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const addSchedule = useCallback((data) => {
-    sync(prev => {
-      const id = `SC${String(prev.length + 1).padStart(3, '0')}`;
-      const now = new Date().toISOString();
-      return [...prev, { ...data, id, createdAt: now, updatedAt: now }];
-    });
-  }, [sync]);
+  useEffect(() => {
+    fetchSchedules();
+  }, [fetchSchedules]);
 
-  const updateSchedule = useCallback((id, data) => {
-    sync(prev => prev.map(s => s.id === id ? { ...s, ...data, updatedAt: new Date().toISOString() } : s));
-  }, [sync]);
+  const addSchedule = useCallback(async (data) => {
+    const created = await createWorkSchedule(data);
+    setSchedules((prev) => [...prev, created]);
+    return created;
+  }, []);
 
-  const deleteSchedule = useCallback((id) => {
-    sync(prev => prev.filter(s => s.id !== id));
-  }, [sync]);
+  const updateSchedule = useCallback(async (id, data) => {
+    const updated = await updateWorkSchedule(id, data);
+    setSchedules((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    return updated;
+  }, []);
 
-  const getScheduleById = useCallback((id) => {
-    return schedules.find(s => s.id === id) || null;
-  }, [schedules]);
+  const removeSchedule = useCallback(async (id) => {
+    await deleteWorkSchedule(id);
+    setSchedules((prev) => prev.filter((s) => s.id !== id));
+  }, []);
 
-  const checkConflict = useCallback((employeeId, date, shiftType, excludeId) => {
-    return schedules.filter(s => {
-      if (s.id === excludeId) return false;
-      if (s.status === 'cancelled') return false;
-      return s.employeeIds.includes(employeeId) && s.date === date && s.shiftType === shiftType;
-    });
-  }, [schedules]);
+  const getScheduleById = useCallback(
+    (id) => schedules.find((s) => String(s.id) === String(id)) || null,
+    [schedules],
+  );
 
   return (
-    <ScheduleContext.Provider value={{ schedules, addSchedule, updateSchedule, deleteSchedule, getScheduleById, checkConflict }}>
+    <ScheduleContext.Provider
+      value={{
+        schedules,
+        loading,
+        error,
+        fetchSchedules,
+        addSchedule,
+        updateSchedule,
+        removeSchedule,
+        getScheduleById,
+      }}
+    >
       {children}
     </ScheduleContext.Provider>
   );

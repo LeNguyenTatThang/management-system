@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Coffee, Eye, EyeOff, LogIn } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -17,7 +17,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      toast.success('Đăng nhập thành công!');
+      toast.success('Đang nhập thành công!');
       navigate('/dashboard', { replace: true });
     } catch (err) {
       toast.error(err.message || 'Sai email hoặc mật khẩu');
@@ -77,10 +77,6 @@ export default function Login() {
             {loading ? 'Đang xử lý...' : 'Đăng nhập'}
           </button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-muted">
-          <p>Chưa có tài khoản? <Link to="/register" className="text-primary font-semibold hover:underline">Đăng ký ngay</Link></p>
-        </div>
 
         <div className="mt-4 pt-4 border-t text-center">
           <p className="text-xs text-muted mb-2">Tài khoản mẫu:</p>

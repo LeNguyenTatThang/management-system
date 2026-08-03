@@ -1,14 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAttendance } from '../../contexts/AttendanceContext';
 import { useStaff } from '../../contexts/StaffContext';
-import { useSchedule } from '../../contexts/ScheduleContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Clock, LogIn, LogOut, Users, CheckCircle, AlertTriangle, XCircle, Search } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import ResponsiveTable from '../../components/ui/ResponsiveTable';
 import FilterPopover from '../../components/ui/FilterPopover';
-import { BRANCHES, SHIFT_TYPES } from '../../utils/shiftConfig';
+import { SHIFT_TYPES } from '../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
 
 const STATUS_CONFIG = {
@@ -18,8 +17,6 @@ const STATUS_CONFIG = {
   late: { label: 'Đi trễ', badge: 'badge-warning' },
   early_leave: { label: 'Về sớm', badge: 'badge-warning' },
   late_early: { label: 'Đi trễ + Về sớm', badge: 'badge-warning' },
-  absent: { label: 'Vắng mặt', badge: 'badge-danger' },
-  leave: { label: 'Nghỉ phép', badge: 'badge-info' },
 };
 
 const STAT_CARDS = [
@@ -28,43 +25,71 @@ const STAT_CARDS = [
   { key: 'working', label: 'Đang làm', color: '#3b82f6', bg: '#dbeafe' },
   { key: 'checkedOut', label: 'Đã check-out', color: '#6366f1', bg: '#e0e7ff' },
   { key: 'late', label: 'Đi trễ', color: '#f59e0b', bg: '#fef3c7' },
-  { key: 'absent', label: 'Vắng mặt', color: '#ef4444', bg: '#fee2e2' },
 ];
 
-const ICONS = { total: Users, checkedIn: LogIn, working: Clock, checkedOut: CheckCircle, late: AlertTriangle, absent: XCircle };
+const ICONS = { total: Users, checkedIn: LogIn, working: Clock, checkedOut: CheckCircle, late: AlertTriangle };
 
 function todayStr() {
   const d = new Date();
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function toQueryString(dateRange) {
+  const d = new Date();
+  const fmt = (y, m, day) => `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+  if (dateRange === 'today') {
+    return { date: fmt(d.getFullYear(), d.getMonth(), d.getDate()) };
+  }
+  if (dateRange === 'yesterday') {
+    d.setDate(d.getDate() - 1);
+    return { date: fmt(d.getFullYear(), d.getMonth(), d.getDate()) };
+  }
+  if (dateRange === 'week') {
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const mon = new Date(d);
+    mon.setDate(diff);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return { from: fmt(mon.getFullYear(), mon.getMonth(), mon.getDate()), to: fmt(sun.getFullYear(), sun.getMonth(), sun.getDate()) };
+  }
+  if (dateRange === 'month') {
+    const first = new Date(d.getFullYear(), d.getMonth(), 1);
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    return { from: fmt(first.getFullYear(), first.getMonth(), first.getDate()), to: fmt(last.getFullYear(), last.getMonth(), last.getDate()) };
+  }
+  return {};
 }
 
 export default function Attendance() {
   const navigate = useNavigate();
-  const { records, getTodayRecords, checkIn, checkOut, formatMinutes } = useAttendance();
+  const { records, loading, error, fetchAttendances, addRecord, modifyRecord, formatMinutes } = useAttendance();
   const { staffList } = useStaff();
-  const { schedules } = useSchedule();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const today = todayStr();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterBranch, setFilterBranch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterShift, setFilterShift] = useState('');
   const [dateRange, setDateRange] = useState('today');
-  const [checkNote, setCheckNote] = useState('');
   const [checking, setChecking] = useState(false);
 
-  const todayRecords = useMemo(() => getTodayRecords(), [getTodayRecords, records]);
+  useEffect(() => {
+    fetchAttendances(toQueryString(dateRange));
+  }, [dateRange, fetchAttendances]);
 
   const stats = useMemo(() => {
     const total = staffList.filter(s => s.status === 'Đang làm').length;
-    const checkedIn = todayRecords.filter(r => r.checkIn).length;
-    const working = todayRecords.filter(r => r.status === 'working').length;
-    const checkedOut = todayRecords.filter(r => r.checkOut).length;
-    const late = todayRecords.filter(r => r.status === 'late' || r.status === 'late_early').length;
+    const checkedIn = records.filter(r => r.checkIn).length;
+    const working = records.filter(r => r.status === 'working').length;
+    const checkedOut = records.filter(r => r.checkOut).length;
+    const late = records.filter(r => r.status === 'late' || r.status === 'late_early').length;
     const absent = total - checkedIn;
     return { total, checkedIn, working, checkedOut, late, absent };
-  }, [staffList, todayRecords]);
+  }, [staffList, records]);
 
   const currentEmployee = useMemo(() => {
     if (!user) return null;
@@ -73,24 +98,19 @@ export default function Attendance() {
 
   const myTodayRecord = useMemo(() => {
     if (!currentEmployee) return null;
-    return todayRecords.find(r => r.employeeId === currentEmployee.id) || null;
-  }, [currentEmployee, todayRecords]);
-
-  const myTodaySchedule = useMemo(() => {
-    if (!currentEmployee) return null;
-    return schedules.find(s => s.date === today && s.employeeIds?.includes(currentEmployee.id) && s.status !== 'cancelled') || null;
-  }, [currentEmployee, schedules, today]);
+    const todayISO = new Date().toISOString().slice(0, 10);
+    return records.find(r => r.employeeId === currentEmployee.id && r.dateISO?.startsWith(todayISO)) || null;
+  }, [currentEmployee, records]);
 
   const handleCheckIn = async () => {
     if (!currentEmployee) { toast.error('Không tìm thấy thông tin nhân viên'); return; }
     if (myTodayRecord?.checkIn) { toast.error('Bạn đã check-in hôm nay'); return; }
     setChecking(true);
     try {
-      const branchId = myTodaySchedule?.branchId || 'CN01';
-      const branchName = BRANCHES.find(b => b.id === branchId)?.name || branchId;
-      const result = checkIn(currentEmployee.id, currentEmployee.name, currentEmployee.role, myTodaySchedule, branchId, branchName, checkNote);
-      if (result) toast.success(`Check-in thành công lúc ${result.checkIn}`);
-      else toast.error('Không thể check-in');
+      const result = await addRecord({ date: new Date().toISOString() });
+      toast.success(`Check-in thành công lúc ${result.checkIn}`);
+    } catch (e) {
+      toast.error(e.message || 'Không thể check-in');
     } finally { setChecking(false); }
   };
 
@@ -100,53 +120,24 @@ export default function Attendance() {
     if (myTodayRecord?.checkOut) { toast.error('Bạn đã check-out hôm nay'); return; }
     setChecking(true);
     try {
-      const result = checkOut(currentEmployee.id);
-      if (result) toast.success(`Check-out thành công lúc ${result.checkOut}`);
-      else toast.error('Không thể check-out');
+      const result = await modifyRecord(myTodayRecord.id, {});
+      toast.success(`Check-out thành công lúc ${result.checkOut}`);
+    } catch (e) {
+      toast.error(e.message || 'Không thể check-out');
     } finally { setChecking(false); }
   };
 
   const filteredRecords = useMemo(() => {
     let list = records;
-    if (dateRange === 'today') {
-      list = list.filter(r => r.workDate === today);
-    } else if (dateRange === 'yesterday') {
-      const d = new Date(); d.setDate(d.getDate() - 1);
-      const yStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-      list = list.filter(r => r.workDate === yStr);
-    } else if (dateRange === 'week') {
-      const now = new Date();
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      const mon = new Date(now.setDate(diff));
-      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-      const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-      const ms = fmt(mon), ss = fmt(sun);
-      list = list.filter(r => r.workDate >= ms && r.workDate <= ss);
-    } else if (dateRange === 'month') {
-      const now = new Date();
-      const fmt = (y, m, d) => `${String(d).padStart(2, '0')}/${String(m + 1).padStart(2, '0')}/${y}`;
-      const first = fmt(now.getFullYear(), now.getMonth(), 1);
-      const last = fmt(now.getFullYear(), now.getMonth(), new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
-      list = list.filter(r => r.workDate >= first && r.workDate <= last);
-    }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       list = list.filter(r => r.employeeName?.toLowerCase().includes(q));
     }
-    if (filterBranch) list = list.filter(r => r.branchId === filterBranch);
-    if (filterStatus) list = list.filter(r => r.status === filterStatus);
-    if (filterShift) {
-      list = list.filter(r => {
-        const s = schedules.find(s => s.id === r.scheduleId);
-        return s?.shiftType === filterShift;
-      });
+    if (filterStatus) {
+      list = list.filter(r => r.status === filterStatus);
     }
-    return list.sort((a, b) => {
-      if (a.workDate !== b.workDate) return b.workDate.localeCompare(a.workDate);
-      return (a.checkIn || '').localeCompare(b.checkIn || '');
-    });
-  }, [records, dateRange, searchTerm, filterBranch, filterStatus, filterShift, schedules, today]);
+    return list;
+  }, [records, searchTerm, filterStatus]);
 
   const dateFilterOptions = [
     { value: 'today', label: 'Hôm nay' },
@@ -155,6 +146,20 @@ export default function Attendance() {
     { value: 'month', label: 'Tháng này' },
     { value: 'all', label: 'Tất cả' },
   ];
+
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="flex flex-col items-center justify-center py-12">
+          <XCircle size={48} className="text-danger mb-4" />
+          <p className="text-danger font-semibold">{error}</p>
+          <button className="btn btn-primary mt-4" onClick={() => fetchAttendances(toQueryString(dateRange))}>
+            Thử lại
+          </button>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
@@ -175,31 +180,22 @@ export default function Attendance() {
               <div className="min-w-0 flex-1">
                 <div className="font-bold text-base">{currentEmployee.name}</div>
                 <div className="text-sm text-muted">{currentEmployee.role}</div>
-                {myTodaySchedule && (
-                  <div className="text-xs text-muted mt-0.5">
-                    Ca làm: {myTodaySchedule.startTime} - {myTodaySchedule.endTime}
-                    {myTodaySchedule.branchName && ` @ ${myTodaySchedule.branchName}`}
-                  </div>
-                )}
                 {myTodayRecord?.checkIn && (
                   <div className="text-xs text-muted mt-0.5">
                     Check-in: {myTodayRecord.checkIn}
                     {myTodayRecord.checkOut && ` | Check-out: ${myTodayRecord.checkOut}`}
-                    {myTodayRecord.workedMinutes != null && ` | Làm: ${formatMinutes(myTodayRecord.workedMinutes)}`}
+                    {myTodayRecord.workedMinutesFormatted && ` | Làm: ${myTodayRecord.workedMinutesFormatted}`}
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                {!myTodaySchedule && dateRange === 'today' && (
-                  <div className="text-xs text-warning flex items-center gap-1">
-                    <AlertTriangle size={14} /> Không có lịch hôm nay
-                  </div>
-                )}
                 {!myTodayRecord?.checkIn ? (
-                  <button className="btn btn-primary flex items-center gap-2 h-40px whitespace-nowrap"
-                    onClick={handleCheckIn} disabled={checking}>
-                    <LogIn size={18} /> {checking ? 'Đang check-in...' : 'Check-in'}
-                  </button>
+                  hasPermission('hr.attendance.create') && (
+                    <button className="btn btn-primary flex items-center gap-2 h-40px whitespace-nowrap"
+                      onClick={handleCheckIn} disabled={checking}>
+                      <LogIn size={18} /> {checking ? 'Đang check-in...' : 'Check-in'}
+                    </button>
+                  )
                 ) : !myTodayRecord?.checkOut ? (
                   <button className="btn btn-warning flex items-center gap-2 h-40px whitespace-nowrap"
                     onClick={handleCheckOut} disabled={checking}>
@@ -215,7 +211,7 @@ export default function Attendance() {
           </div>
         )}
 
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 w-full min-w-0">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 w-full min-w-0">
           {STAT_CARDS.map(({ key, label, color, bg }) => {
             const Icon = ICONS[key];
             const value = stats[key];
@@ -235,14 +231,6 @@ export default function Attendance() {
           <FilterPopover
             filters={[
               {
-                key: 'branch',
-                label: 'Chi nhánh',
-                options: [
-                  { value: '', label: 'Tất cả chi nhánh' },
-                  ...BRANCHES.map(b => ({ value: b.id, label: b.name })),
-                ],
-              },
-              {
                 key: 'status',
                 label: 'Trạng thái',
                 options: [
@@ -250,22 +238,12 @@ export default function Attendance() {
                   ...Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label })),
                 ],
               },
-              {
-                key: 'shiftType',
-                label: 'Loại ca',
-                options: [
-                  { value: '', label: 'Tất cả ca' },
-                  ...SHIFT_TYPES.map(t => ({ value: t.value, label: t.label })),
-                ],
-              },
             ]}
-            activeFilters={{ branch: filterBranch, status: filterStatus, shiftType: filterShift }}
+            activeFilters={{ status: filterStatus }}
             onFilterChange={(key, value) => {
-              if (key === 'branch') setFilterBranch(value);
               if (key === 'status') setFilterStatus(value);
-              if (key === 'shiftType') setFilterShift(value);
             }}
-            onClearAll={() => { setFilterBranch(''); setFilterStatus(''); setFilterShift(''); }}
+            onClearAll={() => setFilterStatus('')}
           />
           <div className="relative flex-1 min-w-0 min-w-200px">
             <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
@@ -289,7 +267,6 @@ export default function Attendance() {
                 <tr>
                   <th className="w-12 text-center">STT</th>
                   <th>Nhân viên</th>
-                  <th className="hidden md:table-cell">Chi nhánh</th>
                   <th className="hidden md:table-cell">Ca làm</th>
                   <th>Ngày</th>
                   <th>Giờ vào</th>
@@ -301,7 +278,9 @@ export default function Attendance() {
                 </tr>
               </thead>
               <tbody>
-                {filteredRecords.map((r, idx) => {
+                {loading ? (
+                  <tr><td colSpan={10} className="text-center text-muted py-8">Đang tải dữ liệu...</td></tr>
+                ) : filteredRecords.map((r, idx) => {
                   const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
                   return (
                     <tr key={r.id} className="cursor-pointer transition hover-bg-primary-light"
@@ -318,15 +297,20 @@ export default function Attendance() {
                           </div>
                         </div>
                       </td>
-                      <td className="hidden md:table-cell text-sm text-muted">{r.branchName}</td>
-                      <td className="hidden md:table-cell text-sm">{r.scheduledStart}-{r.scheduledEnd}</td>
-                      <td className="text-sm whitespace-nowrap">{r.workDate}</td>
+                      <td className="hidden md:table-cell text-sm">
+                        {r.scheduledStart && r.scheduledEnd
+                          ? `${r.scheduledStart}-${r.scheduledEnd}`
+                          : r.schedule?.shift?.startTime && r.schedule?.shift?.endTime
+                            ? `${r.schedule.shift.startTime}-${r.schedule.shift.endTime}`
+                            : '—'}
+                      </td>
+                      <td className="text-sm whitespace-nowrap">{r.date}</td>
                       <td className="font-semibold">{r.checkIn || '—'}</td>
                       <td className="font-semibold">{r.checkOut || '—'}</td>
-                      <td className="hidden md:table-cell text-sm">{formatMinutes(r.workedMinutes) || '—'}</td>
+                      <td className="hidden md:table-cell text-sm">{r.workedMinutesFormatted || '—'}</td>
                       <td className="hidden md:table-cell">
                         {r.lateMinutes > 0 ? (
-                          <span className="text-xs text-warning font-semibold">{formatMinutes(r.lateMinutes)}</span>
+                          <span className="text-xs text-warning font-semibold">{r.lateMinutesFormatted}</span>
                         ) : '—'}
                       </td>
                       <td><span className={`badge ${cfg.badge}`}>{cfg.label}</span></td>
@@ -339,8 +323,8 @@ export default function Attendance() {
                     </tr>
                   );
                 })}
-                {filteredRecords.length === 0 && (
-                  <tr><td colSpan={11} className="text-center text-muted py-8">Chưa có dữ liệu chấm công</td></tr>
+                {!loading && filteredRecords.length === 0 && (
+                  <tr><td colSpan={10} className="text-center text-muted py-8">Chưa có dữ liệu chấm công</td></tr>
                 )}
               </tbody>
             </ResponsiveTable>

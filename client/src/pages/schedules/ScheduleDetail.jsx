@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSchedule } from '../../contexts/ScheduleContext';
-import { ArrowLeft, Calendar, MapPin, Clock, Users, FileText, Edit3, Trash2, XCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { ArrowLeft, Calendar, Clock, Users, FileText, Edit3, Trash2, XCircle } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
-import { BRANCHES, SHIFT_TYPES, SHIFT_STATUSES } from '../../utils/shiftConfig';
+import { SHIFT_TYPES } from '../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
 
-const STATUS_LABELS = {};
-SHIFT_STATUSES.forEach(s => { STATUS_LABELS[s.value] = s.label; });
+const STATUS_LABELS = {
+  scheduled: 'Đã lên lịch',
+  in_progress: 'Đang làm',
+  completed: 'Đã hoàn thành',
+  cancelled: 'Đã hủy',
+};
 
 const SHIFT_LABELS = {};
 SHIFT_TYPES.forEach(t => { SHIFT_LABELS[t.value] = t.label; });
@@ -22,8 +27,12 @@ const STATUS_BADGE = {
 export default function ScheduleDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getScheduleById, updateSchedule, deleteSchedule } = useSchedule();
+  const { getScheduleById, updateSchedule, removeSchedule } = useSchedule();
+  const { hasPermission } = useAuth();
   const [schedule, setSchedule] = useState(null);
+
+  const canUpdate = hasPermission('hr.schedule.update');
+  const canDelete = hasPermission('hr.schedule.delete');
 
   useEffect(() => {
     const s = getScheduleById(id);
@@ -37,21 +46,27 @@ export default function ScheduleDetail() {
 
   if (!schedule) return null;
 
-  const branchName = BRANCHES.find(b => b.id === schedule.branchId)?.name || schedule.branchName;
-
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm(`Xóa ca làm việc ngày ${schedule.date} (${SHIFT_LABELS[schedule.shiftType] || schedule.shiftType})?`)) {
-      deleteSchedule(schedule.id);
-      toast.success('Đã xóa ca làm việc');
-      navigate('/schedules');
+      try {
+        await removeSchedule(schedule.id);
+        toast.success('Đã xóa ca làm việc');
+        navigate('/schedules');
+      } catch (e) {
+        toast.error(e.message || 'Không thể xóa');
+      }
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (window.confirm(`Hủy ca làm việc ngày ${schedule.date}?`)) {
-      updateSchedule(schedule.id, { status: 'cancelled' });
-      toast.success('Đã hủy ca làm việc');
-      setSchedule(prev => ({ ...prev, status: 'cancelled' }));
+      try {
+        await updateSchedule(schedule.id, { status: 'CANCELLED' });
+        toast.success('Đã hủy ca làm việc');
+        setSchedule(prev => ({ ...prev, status: 'cancelled' }));
+      } catch (e) {
+        toast.error(e.message || 'Không thể hủy');
+      }
     }
   };
 
@@ -85,7 +100,7 @@ export default function ScheduleDetail() {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Chi tiết ca làm việc</h1>
-            <p className="text-muted text-sm mt-1">{schedule.date} &middot; {SHIFT_LABELS[schedule.shiftType] || schedule.shiftType}</p>
+            <p className="text-muted text-sm mt-1">{schedule.date} &middot; {SHIFT_LABELS[schedule.shiftType] || schedule.shift?.name}</p>
           </div>
           <span className={`badge mt-2 ${STATUS_BADGE[schedule.status] || 'badge-neutral'}`}>
             {STATUS_LABELS[schedule.status] || schedule.status}
@@ -95,8 +110,9 @@ export default function ScheduleDetail() {
         <div className="card mb-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <InfoRow icon={Calendar} label="Ngày làm việc" value={schedule.date} />
-            <InfoRow icon={MapPin} label="Chi nhánh" value={branchName} />
-            <InfoRow icon={Clock} label="Ca làm việc" value={SHIFT_LABELS[schedule.shiftType] || schedule.shiftType} />
+            <InfoRow icon={Clock} label="Ca làm việc" value={schedule.shift?.name || SHIFT_LABELS[schedule.shiftType]} />
+            <InfoRow icon={Clock} label="Check-in" value={schedule.checkIn || 'Chưa check-in'} />
+            <InfoRow icon={Clock} label="Check-out" value={schedule.checkOut || 'Chưa check-out'} />
           </div>
         </div>
 
@@ -110,17 +126,17 @@ export default function ScheduleDetail() {
             </div>
           </div>
           <div className="flex flex-col gap-3">
-            {schedule.employees?.length > 0 ? schedule.employees.map((emp, i) => (
-              <div key={emp.id || i} className="flex items-center gap-3 p-3 rounded-lg border border-soft">
+            {schedule.employee ? (
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-soft">
                 <div className="w-10 h-10 rounded-full bg-primary-light text-primary flex items-center justify-center text-sm font-bold">
-                  {emp.name?.charAt(0).toUpperCase()}
+                  {schedule.employee.name?.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold">{emp.name}</div>
-                  <div className="text-xs text-muted">{emp.role || 'Nhân viên'}</div>
+                  <div className="text-sm font-semibold">{schedule.employee.name}</div>
+                  <div className="text-xs text-muted">{schedule.employee.role || 'Nhân viên'}</div>
                 </div>
               </div>
-            )) : (
+            ) : (
               <p className="text-sm text-muted">Chưa có nhân viên</p>
             )}
           </div>
@@ -141,7 +157,7 @@ export default function ScheduleDetail() {
         )}
 
         <div className="flex items-center justify-end gap-3 mt-6 mb-8">
-          {schedule.status === 'scheduled' && (
+          {schedule.status === 'scheduled' && canUpdate && (
             <>
               <button className="btn btn-outline modal-btn px-6 flex items-center gap-2" onClick={handleCancel}>
                 <XCircle size={16} /> Hủy ca
@@ -152,10 +168,12 @@ export default function ScheduleDetail() {
               </button>
             </>
           )}
-          <button className="btn btn-outline modal-btn px-6 flex items-center gap-2 text-danger hover-bg-danger-light"
-            onClick={handleDelete}>
-            <Trash2 size={16} /> Xóa
-          </button>
+          {canDelete && (
+            <button className="btn btn-outline modal-btn px-6 flex items-center gap-2 text-danger hover-bg-danger-light"
+              onClick={handleDelete}>
+              <Trash2 size={16} /> Xóa
+            </button>
+          )}
         </div>
       </div>
     </PageContainer>

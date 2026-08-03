@@ -1,82 +1,68 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
 const AuthContext = createContext(null);
-
-const USERS_KEY = 'toolmanager_users';
-const SESSION_KEY = 'toolmanager_session';
-
-function loadUsers() {
-  try {
-    const stored = localStorage.getItem(USERS_KEY);
-    if (stored) return JSON.parse(stored);
-    const defaultUsers = [
-      { id: 'USR000001', name: 'Quản lý DEZ LAB', email: 'dez@gmail.com', password: '123456', role: 'Quản lý', createdAt: new Date().toISOString() },
-    ];
-    localStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
-    return defaultUsers;
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
+const SESSION_KEY = 'management_session';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
     }
   });
 
-  const login = useCallback((email, password) => {
-    return new Promise((resolve, reject) => {
-      const users = loadUsers();
-      const found = users.find(u => u.email === email && u.password === password);
-      if (!found) {
-        reject(new Error('Email hoặc mật khẩu không đúng'));
-        return;
-      }
-      const session = { id: found.id, name: found.name, email: found.email, role: found.role };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      setUser(session);
-      resolve(session);
-    });
-  }, []);
+  const [permissions, setPermissions] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return parsed.permissions || [];
+    } catch {
+      return [];
+    }
+  });
 
-  const register = useCallback((name, email, password) => {
-    return new Promise((resolve, reject) => {
-      const users = loadUsers();
-      if (users.some(u => u.email === email)) {
-        reject(new Error('Email đã được đăng ký'));
-        return;
-      }
-      const newUser = {
-        id: 'USR' + String(Date.now()).slice(-6),
-        name,
-        email,
-        password,
-        role: 'Nhân viên',
-        createdAt: new Date().toISOString(),
-      };
-      saveUsers([...users, newUser]);
-      const session = { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      setUser(session);
-      resolve(session);
+  const login = useCallback(async (email, password) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      const msg = Array.isArray(json.message) ? json.message.join(', ') : json.message;
+      throw new Error(msg || 'Đăng nhập thất bại');
+    }
+
+    const { accessToken, user: userData, permissions: perms } = json.data;
+    const session = { ...userData, accessToken, permissions: perms };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    setUser(session);
+    setPermissions(perms);
+    return session;
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY);
     setUser(null);
+    setPermissions([]);
   }, []);
 
+  const hasPermission = useCallback(
+    (perm) => {
+      if (!user) return false;
+      if (user.roleCode === 'MANAGER') return true;
+      return permissions.includes(perm);
+    },
+    [user, permissions],
+  );
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, permissions, login, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

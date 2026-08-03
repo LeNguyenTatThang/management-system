@@ -7,19 +7,20 @@ const SHIFT_ROWS = [
   { key: 'evening', label: 'TỐI' },
 ];
 
-function EmployeeBlock({ employee, attendance }) {
-  const hasCheckIn = attendance?.checkIn;
-  const hasCheckOut = attendance?.checkOut;
+function EmployeeBlock({ schedule }) {
+  const emp = schedule.employee;
+  const hasCheckIn = schedule.checkIn;
+  const hasCheckOut = schedule.checkOut;
 
   return (
     <div className="rounded-lg border border-gray-100 bg-white p-2.5 mb-1.5 text-xs hover-shadow-sm transition">
       <div className="flex items-center gap-2 mb-1.5">
         <div className="w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-          {employee.name?.charAt(0)?.toUpperCase() || '?'}
+          {emp?.name?.charAt(0)?.toUpperCase() || '?'}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-semibold truncate leading-tight">{employee.name}</div>
-          <div className="text-[10px] text-muted truncate leading-tight">{employee.role || 'Nhân viên'}</div>
+          <div className="font-semibold truncate leading-tight">{emp?.name || 'N/A'}</div>
+          <div className="text-[10px] text-muted truncate leading-tight">{emp?.role || 'Nhân viên'}</div>
         </div>
       </div>
       <div className="flex flex-col gap-0.5 pl-8">
@@ -40,13 +41,7 @@ function EmployeeBlock({ employee, attendance }) {
   );
 }
 
-export default function ScheduleCalendar({ weekDates, schedules, attendanceRecords = [], onScheduleClick, onEdit, onDelete }) {
-  const attendanceMap = {};
-  attendanceRecords.forEach(r => {
-    const key = `${r.employeeId}_${r.workDate}`;
-    attendanceMap[key] = r;
-  });
-
+export default function ScheduleCalendar({ weekDates, schedules, onScheduleClick, onEdit, onDelete }) {
   const schedulesByDateShift = {};
   weekDates.forEach(({ date }) => {
     schedulesByDateShift[date] = {};
@@ -54,6 +49,7 @@ export default function ScheduleCalendar({ weekDates, schedules, attendanceRecor
       schedulesByDateShift[date][key] = [];
     });
   });
+
   schedules.forEach(s => {
     if (schedulesByDateShift[s.date] && schedulesByDateShift[s.date][s.shiftType]) {
       schedulesByDateShift[s.date][s.shiftType].push(s);
@@ -89,26 +85,25 @@ export default function ScheduleCalendar({ weekDates, schedules, attendanceRecor
                         <div className="flex flex-col gap-0.5">
                           {cellSchedules.map(s => (
                             <div key={s.id} className="relative group">
-                              <div className="absolute top-1 right-1 hidden group-hover:flex items-center gap-0.5 z-10">
-                                <button className="p-0.5 rounded bg-white shadow-sm text-muted hover-text-primary cursor-pointer"
-                                  onClick={e => { e.stopPropagation(); onEdit?.(s); }}>
-                                  <Edit3 size={10} />
-                                </button>
-                                <button className="p-0.5 rounded bg-white shadow-sm text-muted hover-text-danger cursor-pointer"
-                                  onClick={e => { e.stopPropagation(); onDelete?.(s.id); }}>
-                                  <Trash2 size={10} />
-                                </button>
+                              {(onEdit || onDelete) && (
+                                <div className="absolute top-1 right-1 hidden group-hover:flex items-center gap-0.5 z-10">
+                                  {onEdit && (
+                                    <button className="p-0.5 rounded bg-white shadow-sm text-muted hover-text-primary cursor-pointer"
+                                      onClick={e => { e.stopPropagation(); onEdit(s); }}>
+                                      <Edit3 size={10} />
+                                    </button>
+                                  )}
+                                  {onDelete && (
+                                    <button className="p-0.5 rounded bg-white shadow-sm text-muted hover-text-danger cursor-pointer"
+                                      onClick={e => { e.stopPropagation(); onDelete(s.id); }}>
+                                      <Trash2 size={10} />
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                              <div className="cursor-pointer" onClick={() => onScheduleClick?.(s)}>
+                                <EmployeeBlock schedule={s} />
                               </div>
-                              {s.employees?.map((emp, idx) => {
-                                const attKey = `${emp.id}_${date}`;
-                                const att = attendanceMap[attKey];
-                                return (
-                                  <div key={emp.id || idx} className="cursor-pointer"
-                                    onClick={() => onScheduleClick?.(s)}>
-                                    <EmployeeBlock employee={emp} attendance={att} />
-                                  </div>
-                                );
-                              })}
                             </div>
                           ))}
                         </div>

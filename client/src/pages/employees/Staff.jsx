@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useStaff } from '../../contexts/StaffContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { User, Mail, Phone, Calendar, Plus, Eye } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 
@@ -33,7 +34,9 @@ const getRoleIcon = (role) => {
 
 export default function Staff() {
   const navigate = useNavigate();
-  const { staffList, loading } = useStaff();
+  const { staffList, loading, error, fetchStaff } = useStaff();
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission('hr.employee.create');
 
   return (
     <PageContainer>
@@ -43,20 +46,35 @@ export default function Staff() {
             <h2 className="text-xl font-bold">Quản lý nhân viên</h2>
             <p className="text-muted text-sm">Có {staffList.length} nhân viên</p>
           </div>
-          <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
-            onClick={() => navigate('/employees/create')}>
-            <Plus size={18} /> Thêm nhân viên
-          </button>
+          {canCreate && (
+            <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
+              onClick={() => navigate('/employees/create')}>
+              <Plus size={18} /> Thêm nhân viên
+            </button>
+          )}
         </div>
 
-        {staffList.length === 0 && !loading && (
+        {error && (
+          <div className="card p-12 text-center">
+            <User size={48} className="mx-auto text-muted mb-4" />
+            <h3 className="font-bold text-base mb-1">Không thể tải danh sách nhân viên</h3>
+            <p className="text-sm text-muted mb-4">{error}</p>
+            <button className="btn btn-primary inline-flex items-center gap-2" onClick={fetchStaff}>
+              <Plus size={18} /> Thử lại
+            </button>
+          </div>
+        )}
+
+        {!error && staffList.length === 0 && !loading && (
           <div className="card p-12 text-center">
             <User size={48} className="mx-auto text-muted mb-4" />
             <h3 className="font-bold text-base mb-1">Chưa có nhân viên</h3>
             <p className="text-sm text-muted mb-4">Hãy thêm nhân viên đầu tiên để bắt đầu quản lý.</p>
-            <button className="btn btn-primary inline-flex items-center gap-2" onClick={() => navigate('/employees/create')}>
-              <Plus size={18} /> Thêm nhân viên
-            </button>
+            {canCreate && (
+              <button className="btn btn-primary inline-flex items-center gap-2" onClick={() => navigate('/employees/create')}>
+                <Plus size={18} /> Thêm nhân viên
+              </button>
+            )}
           </div>
         )}
 
@@ -80,7 +98,7 @@ export default function Staff() {
           </div>
         )}
 
-        {!loading && staffList.length > 0 && (
+        {!error && !loading && staffList.length > 0 && (
           <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2 w-full min-w-0">
             {staffList.map(member => {
               const avatarSrc = member.image || member.avatar;

@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSchedule } from '../../contexts/ScheduleContext';
-import { useAttendance } from '../../contexts/AttendanceContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, ChevronLeft, ChevronRight, LayoutGrid, List as ListIcon } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import ResponsiveTable from '../../components/ui/ResponsiveTable';
-import FilterPopover from '../../components/ui/FilterPopover';
 import ScheduleCalendar from '../../components/schedule/ScheduleCalendar';
-import { getWeekDates, BRANCHES, SHIFT_TYPES, SHIFT_STATUSES } from '../../utils/shiftConfig';
+import { getWeekDates, SHIFT_TYPES } from '../../utils/shiftConfig';
 import { toast } from 'react-hot-toast';
+
+const SHIFT_LABELS = {};
+SHIFT_TYPES.forEach(t => { SHIFT_LABELS[t.value] = t.label; });
 
 const STATUS_LABELS = {
   scheduled: 'Đã lên lịch',
@@ -17,24 +19,21 @@ const STATUS_LABELS = {
   cancelled: 'Đã hủy',
 };
 
-const SHIFT_LABELS = {};
-SHIFT_TYPES.forEach(t => { SHIFT_LABELS[t.value] = t.label; });
-
-const BRANCH_LABELS = {};
-BRANCHES.forEach(b => { BRANCH_LABELS[b.id] = b.name; });
-
-const fmtTime = (t) => t || '';
+const STATUS_BADGE = {
+  scheduled: 'badge-info',
+  in_progress: 'badge-warning',
+  completed: 'badge-success',
+  cancelled: 'badge-danger',
+};
 
 export default function Schedules() {
   const navigate = useNavigate();
-  const { schedules, deleteSchedule } = useSchedule();
-  const { getRecordsByDateRange } = useAttendance();
+  const { schedules, loading, error, fetchSchedules, removeSchedule } = useSchedule();
+  const { hasPermission } = useAuth();
 
   const [viewMode, setViewMode] = useState('calendar');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterBranch, setFilterBranch] = useState('');
   const [filterShift, setFilterShift] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
 
   const today = new Date();
@@ -42,32 +41,32 @@ export default function Schedules() {
   refDate.setDate(refDate.getDate() + weekOffset * 7);
   const weekDates = useMemo(() => getWeekDates(refDate), [refDate]);
 
-  const weekAttendance = useMemo(() => {
-    if (weekDates.length < 2) return [];
-    return getRecordsByDateRange(weekDates[0].date, weekDates[6].date);
-  }, [weekDates, getRecordsByDateRange]);
-
-  const filtered = useMemo(() => {
-    return schedules.filter(s => {
-      const matchSearch = !searchTerm || s.employees?.some(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchBranch = !filterBranch || s.branchId === filterBranch;
-      const matchShift = !filterShift || s.shiftType === filterShift;
-      const matchStatus = !filterStatus || s.status === filterStatus;
-      return matchSearch && matchBranch && matchShift && matchStatus;
-    });
-  }, [schedules, searchTerm, filterBranch, filterShift, filterStatus]);
+  const canCreate = hasPermission('hr.schedule.create');
+  const canUpdate = hasPermission('hr.schedule.update');
+  const canDelete = hasPermission('hr.schedule.delete');
 
   const weekSchedules = useMemo(() => {
-    const weekDateSet = new Set(weekDates.map(d => d.date));
-    return filtered.filter(s => weekDateSet.has(s.date));
-  }, [filtered, weekDates]);
+    return schedules.filter(s => {
+      const matchSearch = !searchTerm || s.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchShift = !filterShift || s.shiftType === filterShift;
+      const d = new Date(s.dateISO);
+      const weekStart = weekDates[0] ? parseDateStr(weekDates[0].date) : null;
+      const weekEnd = weekDates[6] ? parseDateStr(weekDates[6].date) : null;
+      const matchWeek = (!weekStart || d >= weekStart) && (!weekEnd || d <= weekEnd);
+      return matchSearch && matchShift && matchWeek;
+    });
+  }, [schedules, searchTerm, filterShift, weekDates]);
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const s = schedules.find(x => x.id === id);
     if (!s) return;
     if (window.confirm(`Xóa ca làm việc ngày ${s.date} (${SHIFT_LABELS[s.shiftType] || s.shiftType})?`)) {
-      deleteSchedule(id);
-      toast.success('Đã xóa ca làm việc');
+      try {
+        await removeSchedule(id);
+        toast.success('Đã xóa ca làm việc');
+      } catch (e) {
+        toast.error(e.message || 'Không thể xóa');
+      }
     }
   };
 
@@ -77,6 +76,18 @@ export default function Schedules() {
 
   const weekLabel = `${weekDates[0]?.date || ''} - ${weekDates[6]?.date || ''}`;
 
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="text-center py-16">
+          <h2 className="text-lg font-bold mb-2">Không thể tải danh sách lịch làm việc</h2>
+          <p className="text-muted text-sm mb-4">{error}</p>
+          <button className="btn btn-primary" onClick={() => fetchSchedules()}>Thử lại</button>
+        </div>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
       <div className="flex flex-col gap-4 w-full min-w-0">
@@ -85,48 +96,21 @@ export default function Schedules() {
             <h2 className="text-xl font-bold">Lịch làm việc</h2>
             <p className="text-muted text-sm">Quản lý lịch làm việc và ca làm việc của nhân viên</p>
           </div>
-          <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
-            onClick={() => navigate('/schedules/create')}>
-            <Plus size={18} /> Tạo lịch làm việc
-          </button>
+          {canCreate && (
+            <button className="btn btn-primary flex items-center gap-2 flex-shrink-0 whitespace-nowrap h-40px"
+              onClick={() => navigate('/schedules/create')}>
+              <Plus size={18} /> Tạo lịch làm việc
+            </button>
+          )}
         </div>
 
         <div className="card p-3 min-w-0 flex items-center gap-3 flex-wrap">
-          <FilterPopover
-            filters={[
-              {
-                key: 'branch',
-                label: 'Chi nhánh',
-                options: [
-                  { value: '', label: 'Tất cả chi nhánh' },
-                  ...BRANCHES.map(b => ({ value: b.id, label: b.name })),
-                ],
-              },
-              {
-                key: 'shiftType',
-                label: 'Loại ca',
-                options: [
-                  { value: '', label: 'Tất cả loại ca' },
-                  ...SHIFT_TYPES.map(t => ({ value: t.value, label: t.label })),
-                ],
-              },
-              {
-                key: 'status',
-                label: 'Trạng thái',
-                options: [
-                  { value: '', label: 'Tất cả trạng thái' },
-                  ...SHIFT_STATUSES.map(s => ({ value: s.value, label: s.label })),
-                ],
-              },
-            ]}
-            activeFilters={{ branch: filterBranch, shiftType: filterShift, status: filterStatus }}
-            onFilterChange={(key, value) => {
-              if (key === 'branch') setFilterBranch(value);
-              if (key === 'shiftType') setFilterShift(value);
-              if (key === 'status') setFilterStatus(value);
-            }}
-            onClearAll={() => { setFilterBranch(''); setFilterShift(''); setFilterStatus(''); }}
-          />
+          <div className="flex items-center gap-2">
+            <select className="h-36px text-sm border rounded px-2" value={filterShift} onChange={e => setFilterShift(e.target.value)}>
+              <option value="">Tất cả ca</option>
+              {SHIFT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
           <div className="relative flex-1 min-w-0 min-w-200px">
             <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
             <input type="text" placeholder="Tìm nhân viên..." className="w-full pl-10 h-36px"
@@ -155,16 +139,24 @@ export default function Schedules() {
           </div>
         )}
 
-        {viewMode === 'calendar' ? (
+        {loading && (
+          <div className="text-center py-8">
+            <div className="mx-auto mb-2 w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-muted">Đang tải...</p>
+          </div>
+        )}
+
+        {!loading && viewMode === 'calendar' && (
           <ScheduleCalendar
             weekDates={weekDates}
             schedules={weekSchedules}
-            attendanceRecords={weekAttendance}
             onScheduleClick={(s) => navigate(`/schedules/${s.id}`)}
-            onEdit={(s) => navigate(`/schedules/${s.id}/edit`)}
-            onDelete={handleDelete}
+            onEdit={canUpdate ? (s) => navigate(`/schedules/${s.id}/edit`) : undefined}
+            onDelete={canDelete ? handleDelete : undefined}
           />
-        ) : (
+        )}
+
+        {!loading && viewMode === 'list' && (
           <div className="card p-0 overflow-hidden min-w-0">
             <div className="overflow-x-auto">
               <ResponsiveTable>
@@ -173,44 +165,45 @@ export default function Schedules() {
                     <th>Ngày</th>
                     <th>Nhân viên</th>
                     <th>Ca</th>
-                    <th className="hidden md:table-cell">Chi nhánh</th>
                     <th>Trạng thái</th>
-                    <th className="text-right">Thao tác</th>
+                    {canUpdate && <th className="text-right">Thao tác</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(s => (
+                  {weekSchedules.map(s => (
                     <tr key={s.id} className="cursor-pointer transition hover-bg-primary-light"
                       onClick={() => navigate(`/schedules/${s.id}`)}>
                       <td className="whitespace-nowrap font-semibold">{s.date}</td>
                       <td>
-                        <div className="font-semibold text-sm">
-                          {s.employees?.map(e => e.name).join(', ')}
-                        </div>
+                        <div className="font-semibold text-sm">{s.employee?.name || 'N/A'}</div>
+                        <div className="text-xs text-muted">{s.employee?.role || ''}</div>
                       </td>
                       <td><span className="badge badge-neutral">{SHIFT_LABELS[s.shiftType] || s.shiftType}</span></td>
-                      <td className="hidden md:table-cell text-sm text-muted">{BRANCH_LABELS[s.branchId] || s.branchName}</td>
                       <td>
-                        <span className={`badge ${s.status === 'scheduled' ? 'badge-info' : s.status === 'in_progress' ? 'badge-warning' : s.status === 'completed' ? 'badge-success' : 'badge-danger'}`}>
+                        <span className={`badge ${STATUS_BADGE[s.status] || 'badge-neutral'}`}>
                           {STATUS_LABELS[s.status] || s.status}
                         </span>
                       </td>
-                      <td className="text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
-                          <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
-                            onClick={e => { e.stopPropagation(); navigate(`/schedules/${s.id}/edit`); }}>
-                            Sửa
-                          </button>
-                          <button className="p-1.5 text-muted hover-text-danger cursor-pointer"
-                            onClick={e => { e.stopPropagation(); handleDelete(s.id); }}>
-                            Xóa
-                          </button>
-                        </div>
-                      </td>
+                      {canUpdate && (
+                        <td className="text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <button className="p-1.5 text-muted hover-text-primary cursor-pointer"
+                              onClick={e => { e.stopPropagation(); navigate(`/schedules/${s.id}/edit`); }}>
+                              Sửa
+                            </button>
+                            {canDelete && (
+                              <button className="p-1.5 text-muted hover-text-danger cursor-pointer"
+                                onClick={e => { e.stopPropagation(); handleDelete(s.id); }}>
+                                Xóa
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={6} className="text-center text-muted py-8">Không tìm thấy lịch làm việc</td></tr>
+                  {weekSchedules.length === 0 && (
+                    <tr><td colSpan={5} className="text-center text-muted py-8">Không tìm thấy lịch làm việc</td></tr>
                   )}
                 </tbody>
               </ResponsiveTable>
@@ -220,4 +213,9 @@ export default function Schedules() {
       </div>
     </PageContainer>
   );
+}
+
+function parseDateStr(dateStr) {
+  const parts = dateStr.split('/');
+  return new Date(+parts[2], +parts[1] - 1, +parts[0]);
 }

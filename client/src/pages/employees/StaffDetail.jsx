@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStaff } from '../../contexts/StaffContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { ArrowLeft, User, Mail, Phone, Calendar, MapPin, FileText, Briefcase, DollarSign, CreditCard } from 'lucide-react';
+import { ArrowLeft, User, FileText, Briefcase, DollarSign } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 
 const formatDate = (date) => {
@@ -65,10 +65,32 @@ function CardSection({ icon: Icon, title, children, className = '' }) {
 export default function StaffDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { staffList, removeStaff } = useStaff();
-  const { user } = useAuth();
+  const { staffList, removeStaff, loading } = useStaff();
+  const { user, hasPermission } = useAuth();
+  const canDelete = hasPermission('hr.employee.delete');
 
-  const member = staffList.find(m => m.id === id);
+  const member = staffList.find(m => String(m.id) === String(id));
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Bạn có chắc muốn xóa nhân viên "${member.name}"?`)) return;
+    try {
+      await removeStaff(member.id);
+      navigate('/staff');
+    } catch {
+      window.alert('Có lỗi xảy ra khi xóa nhân viên');
+    }
+  };
+
+  if (loading && !member) {
+    return (
+      <PageContainer>
+        <div className="text-center py-16">
+          <div className="mx-auto mb-4 w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted text-sm">Đang tải...</p>
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (!member) {
     return (
@@ -83,12 +105,6 @@ export default function StaffDetail() {
   }
 
   const avatarSrc = member.image || member.avatar;
-
-  const handleDelete = () => {
-    if (!window.confirm(`Bạn có chắc muốn xóa nhân viên "${member.name}"?`)) return;
-    removeStaff(member.id);
-    navigate('/staff');
-  };
 
   return (
     <PageContainer>
@@ -184,7 +200,7 @@ export default function StaffDetail() {
             <ArrowLeft size={16} /> Quay lại
           </button>
           <div className="flex items-center gap-3">
-            {member.email !== user?.email && (
+            {canDelete && member.email !== user?.email && (
               <button className="btn btn-outline text-danger border-danger flex items-center gap-1.5 text-sm"
                 onClick={handleDelete}>
                 Xóa nhân viên

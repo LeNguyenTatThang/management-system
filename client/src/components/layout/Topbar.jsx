@@ -48,7 +48,7 @@ export default function Topbar({ onToggleMenu }) {
           </div>
           <div className="hidden md:block">
             <div className="text-sm font-semibold truncate max-w-120px">{user?.name || 'Người dùng'}</div>
-            <div className="text-xs text-muted">{user?.role || ''}</div>
+            <div className="text-xs text-muted">{user?.roleName || user?.role || ''}</div>
           </div>
         </div>
       </div>

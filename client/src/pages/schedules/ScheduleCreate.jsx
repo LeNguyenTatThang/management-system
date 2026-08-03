@@ -2,34 +2,35 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSchedule } from '../../contexts/ScheduleContext';
 import { useStaff } from '../../contexts/StaffContext';
-import { ArrowLeft, Calendar, MapPin, Users, FileText, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, FileText, Clock } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import FormSection from '../../components/ui/FormSection';
-import DatePicker from '../../components/ui/DatePicker';
-import { SHIFT_TYPES, BRANCHES } from '../../utils/shiftConfig';
+import { getShifts } from '../../services/scheduleService';
 import { toast } from 'react-hot-toast';
 
 export default function ScheduleCreate() {
   const navigate = useNavigate();
-  const { addSchedule, checkConflict } = useSchedule();
+  const { addSchedule } = useSchedule();
   const { staffList } = useStaff();
 
   const [date, setDate] = useState('');
-  const [branchId, setBranchId] = useState('');
-  const [shiftType, setShiftType] = useState('morning');
-  const [employeeIds, setEmployeeIds] = useState([]);
+  const [shiftId, setShiftId] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [shifts, setShifts] = useState([]);
+
+  useEffect(() => {
+    getShifts().then(setShifts).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (date) setErrors(prev => ({ ...prev, date: '' }));
   }, [date]);
-
-  const toggleEmployee = (id) => {
-    setEmployeeIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
 
   const filteredStaff = staffList.filter(s => {
     const q = employeeSearch.toLowerCase();
@@ -38,24 +39,12 @@ export default function ScheduleCreate() {
 
   const validate = () => {
     const errs = {};
-    if (!date.trim()) errs.date = 'Vui lòng chọn ngày làm việc';
-    if (!branchId) errs.branchId = 'Vui lòng chọn chi nhánh';
-    if (employeeIds.length === 0) errs.employeeIds = 'Vui lòng chọn ít nhất 1 nhân viên';
-
-    if (date && employeeIds.length > 0) {
-      const conflicts = [];
-      employeeIds.forEach(eid => {
-        const emp = staffList.find(s => s.id === eid);
-        const clash = checkConflict(eid, date, shiftType, null);
-        if (clash.length > 0) {
-          conflicts.push(`${emp?.name || eid}: đã có lịch ca này`);
-        }
-      });
-      if (conflicts.length > 0) {
-        errs.conflict = conflicts.join('\n');
-      }
+    if (!date) errs.date = 'Vui lòng chọn ngày làm việc';
+    if (!shiftId) errs.shiftId = 'Vui lòng chọn ca làm việc';
+    if (!employeeId) errs.employeeId = 'Vui lòng chọn nhân viên';
+    if (checkIn && checkOut && new Date(checkOut) <= new Date(checkIn)) {
+      errs.checkOut = 'Check-out phải sau check-in';
     }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -65,23 +54,18 @@ export default function ScheduleCreate() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const branch = BRANCHES.find(b => b.id === branchId);
-      const employeesData = employeeIds.map(id => {
-        const emp = staffList.find(s => s.id === id);
-        return { id: emp?.id || id, name: emp?.name || id, role: emp?.role || '' };
-      });
-      addSchedule({
-        date: date.trim(),
-        branchId,
-        branchName: branch?.name || branchId,
-        shiftType,
-        employeeIds,
-        employees: employeesData,
-        status: 'scheduled',
-        note: note.trim(),
+      await addSchedule({
+        employeeId: Number(employeeId),
+        date: new Date(date).toISOString(),
+        shiftId: Number(shiftId),
+        checkIn: checkIn ? new Date(checkIn).toISOString() : undefined,
+        checkOut: checkOut ? new Date(checkOut).toISOString() : undefined,
+        note: note.trim() || undefined,
       });
       toast.success('Tạo lịch làm việc thành công');
       navigate('/schedules');
+    } catch (err) {
+      toast.error(err.message || 'Có lỗi xảy ra');
     } finally {
       setSaving(false);
     }
@@ -112,45 +96,47 @@ export default function ScheduleCreate() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Ngày làm việc <span className="text-danger">*</span></label>
-                <DatePicker value={date} onChange={setDate} placeholder="Chọn ngày làm việc" error={errors.date} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Chi nhánh <span className="text-danger">*</span></label>
-                <select className={`w-full modal-input ${errors.branchId ? 'border-danger' : ''}`}
-                  value={branchId} onChange={e => setBranchId(e.target.value)}>
-                  <option value="">-- Chọn chi nhánh --</option>
-                  {BRANCHES.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-                {errors.branchId && <p className="text-xs text-danger mt-1">{errors.branchId}</p>}
+                <input type="date" className={`w-full modal-input ${errors.date ? 'border-danger' : ''}`}
+                  value={date} onChange={e => setDate(e.target.value)} />
+                {errors.date && <p className="text-xs text-danger mt-1">{errors.date}</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Ca làm việc <span className="text-danger">*</span></label>
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-muted flex-shrink-0" />
-                  <select className="w-full modal-input" value={shiftType} onChange={e => setShiftType(e.target.value)}>
-                    {SHIFT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  <select className={`w-full modal-input ${errors.shiftId ? 'border-danger' : ''}`}
+                    value={shiftId} onChange={e => setShiftId(e.target.value)}>
+                    <option value="">-- Chọn ca --</option>
+                    {shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({s.startTime}-{s.endTime})</option>)}
                   </select>
                 </div>
+                {errors.shiftId && <p className="text-xs text-danger mt-1">{errors.shiftId}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1.5">Check-in</label>
+                <input type="datetime-local" className="w-full modal-input"
+                  value={checkIn} onChange={e => setCheckIn(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1.5">Check-out</label>
+                <input type="datetime-local" className={`w-full modal-input ${errors.checkOut ? 'border-danger' : ''}`}
+                  value={checkOut} onChange={e => setCheckOut(e.target.value)} />
+                {errors.checkOut && <p className="text-xs text-danger mt-1">{errors.checkOut}</p>}
               </div>
             </div>
           </FormSection>
 
           <FormSection icon={Users} title="NHÂN VIÊN" className="mb-5">
-            {errors.employeeIds && <p className="text-xs text-danger mb-2">{errors.employeeIds}</p>}
-            {errors.conflict && (
-              <div className="flex items-start gap-2 p-3 bg-danger-light rounded-lg mb-3">
-                <span className="text-xs text-danger whitespace-pre-line">{errors.conflict}</span>
-              </div>
-            )}
+            {errors.employeeId && <p className="text-xs text-danger mb-2">{errors.employeeId}</p>}
             <input type="text" placeholder="Tìm nhân viên..." className="w-full modal-input mb-3"
               value={employeeSearch} onChange={e => setEmployeeSearch(e.target.value)} />
             <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
               {filteredStaff.map(emp => {
-                const selected = employeeIds.includes(emp.id);
+                const selected = String(employeeId) === String(emp.id);
                 return (
                   <label key={emp.id}
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selected ? 'border-primary bg-primary-light' : 'border-soft hover-border-primary'}`}
-                    onClick={() => toggleEmployee(emp.id)}>
+                    onClick={() => setEmployeeId(emp.id)}>
                     <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary-light text-primary flex items-center justify-center text-sm font-bold">
                       {emp.name.charAt(0).toUpperCase()}
                     </div>

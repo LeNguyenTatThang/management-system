@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStaff } from '../../contexts/StaffContext';
+import { getRoles } from '../../services/employeeService';
 import { ArrowLeft, User, Briefcase, DollarSign } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import FormSection from '../../components/ui/FormSection';
 import { toast } from 'react-hot-toast';
 
-const ROLE_OPTIONS = ['Nhân viên pha chế', 'Thu ngân', 'Phục vụ', 'Quản lý'];
 const STATUS_OPTIONS = ['Đang làm', 'Đã nghỉ việc', 'Tạm nghỉ'];
-const SALARY_TYPE_OPTIONS = ['Theo giờ', 'Theo ca', 'Theo tháng'];
+const SALARY_TYPE_OPTIONS = ['Theo tháng', 'Theo ca'];
 
 export default function EmployeeCreate() {
   const { addStaff } = useStaff();
   const navigate = useNavigate();
+  const [roles, setRoles] = useState([]);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -23,7 +24,7 @@ export default function EmployeeCreate() {
   const [address, setAddress] = useState('');
   const [image, setImage] = useState(null);
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Nhân viên pha chế');
+  const [roleId, setRoleId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [status, setStatus] = useState('Đang làm');
   const [salaryType, setSalaryType] = useState('Theo tháng');
@@ -34,12 +35,24 @@ export default function EmployeeCreate() {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    getRoles()
+      .then((data) => {
+        setRoles(data);
+        if (data.length > 0) setRoleId(String(data[0].id));
+      })
+      .catch(() => {
+        toast.error('Không thể tải danh sách chức vụ');
+      });
+  }, []);
+
   const validate = () => {
     const errs = {};
     if (!name.trim()) errs.name = 'Vui lòng nhập họ tên';
     if (!email.trim()) errs.email = 'Vui lòng nhập email';
     else if (!/\S+@\S+\.\S+/.test(email)) errs.email = 'Email không hợp lệ';
     if (!password) errs.password = 'Vui lòng nhập mật khẩu';
+    if (!roleId) errs.roleId = 'Vui lòng chọn chức vụ';
     if (salary && Number(salary) < 0) errs.salary = 'Lương không được nhỏ hơn 0';
     if (monthlyLeaveDays && Number(monthlyLeaveDays) < 0) errs.monthlyLeaveDays = 'Không được nhỏ hơn 0';
     if (remainingLeaveDays && Number(remainingLeaveDays) < 0) errs.remainingLeaveDays = 'Không được nhỏ hơn 0';
@@ -57,24 +70,24 @@ export default function EmployeeCreate() {
         email: email.trim(),
         password,
         phone: phone.trim(),
-        role,
-        dateOfBirth,
+        roleId: Number(roleId),
+        dateOfBirth: dateOfBirth || undefined,
         gender,
         citizenId,
         address,
-        image: image ? image.name : null,
-        startDate,
+        avatar: image ? image.name : null,
+        startDate: startDate || undefined,
         status,
         salaryType,
-        salary: salary ? Number(salary) : null,
-        monthlyLeaveDays: monthlyLeaveDays ? Number(monthlyLeaveDays) : null,
-        remainingLeaveDays: remainingLeaveDays ? Number(remainingLeaveDays) : null,
+        salary: salary ? Number(salary) : undefined,
+        monthlyLeaveDays: monthlyLeaveDays ? Number(monthlyLeaveDays) : undefined,
+        remainingLeaveDays: remainingLeaveDays ? Number(remainingLeaveDays) : undefined,
         note,
       });
       toast.success('Thêm nhân viên thành công');
       navigate('/staff');
-    } catch {
-      toast.error('Có lỗi xảy ra khi thêm nhân viên');
+    } catch (err) {
+      toast.error(err?.message || 'Có lỗi xảy ra khi thêm nhân viên');
     } finally {
       setSaving(false);
     }
@@ -171,9 +184,11 @@ export default function EmployeeCreate() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Chức vụ <span className="text-danger">*</span></label>
-                <select className="w-full modal-input" value={role} onChange={e => setRole(e.target.value)}>
-                  {ROLE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                <select className={`w-full modal-input ${errors.roleId ? 'border-danger' : ''}`} value={roleId} onChange={e => setRoleId(e.target.value)}>
+                  {roles.length === 0 && <option value="">Đang tải chức vụ...</option>}
+                  {roles.map(r => <option key={r.id} value={String(r.id)}>{r.name}</option>)}
                 </select>
+                {errors.roleId && <p className="text-xs text-danger mt-1">{errors.roleId}</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Ngày bắt đầu nhận việc</label>

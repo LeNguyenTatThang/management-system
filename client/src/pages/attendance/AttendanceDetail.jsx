@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAttendance } from '../../contexts/AttendanceContext';
-import { ArrowLeft, Clock, LogIn, LogOut, MapPin, CalendarDays, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { ArrowLeft, Clock, LogIn, LogOut, CalendarDays, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import { toast } from 'react-hot-toast';
 
@@ -12,39 +13,80 @@ const STATUS_CONFIG = {
   late: { label: 'Đi trễ', color: '#f59e0b' },
   early_leave: { label: 'Về sớm', color: '#f59e0b' },
   late_early: { label: 'Đi trễ + Về sớm', color: '#f59e0b' },
-  absent: { label: 'Vắng mặt', color: '#ef4444' },
-  leave: { label: 'Nghỉ phép', color: '#3b82f6' },
 };
 
 export default function AttendanceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getRecordById, updateRecord, formatMinutes } = useAttendance();
+  const { getRecordById, modifyRecord } = useAttendance();
+  const { hasPermission } = useAuth();
   const [record, setRecord] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editNote, setEditNote] = useState('');
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    const r = getRecordById(id);
-    if (!r) {
-      toast.error('Không tìm thấy bản ghi chấm công');
-      navigate('/attendance');
-      return;
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const r = await getRecordById(id);
+        if (cancelled) return;
+        if (!r) {
+          toast.error('Không tìm thấy bản ghi chấm công');
+          navigate('/attendance');
+          return;
+        }
+        setRecord(r);
+        setEditNote(r.note || '');
+      } catch (e) {
+        if (!cancelled) setError(e.message || 'Không thể tải dữ liệu');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-    setRecord(r);
-    setEditNote(r.note || '');
+    load();
+    return () => { cancelled = true; };
   }, [id, getRecordById, navigate]);
+
+  const handleSaveNote = async () => {
+    try {
+      const updated = await modifyRecord(record.id, { note: editNote.trim() });
+      setRecord(updated);
+      setEditing(false);
+      toast.success('Đã cập nhật ghi chú');
+    } catch (e) {
+      toast.error(e.message || 'Không thể cập nhật ghi chú');
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center text-muted py-12">Đang tải dữ liệu...</div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="max-w-4xl mx-auto flex flex-col items-center py-12">
+          <XCircle size={48} className="text-danger mb-4" />
+          <p className="text-danger font-semibold">{error}</p>
+          <button className="btn btn-primary mt-4" onClick={() => navigate('/attendance')}>Quay lại</button>
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (!record) return null;
 
   const cfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.pending;
-
-  const handleSaveNote = () => {
-    updateRecord(record.id, { note: editNote.trim() });
-    setRecord(prev => ({ ...prev, note: editNote.trim() }));
-    setEditing(false);
-    toast.success('Đã cập nhật ghi chú');
-  };
 
   const InfoRow = ({ icon: Icon, label, value, color }) => (
     <div className="flex items-start gap-3 min-w-0">
@@ -76,7 +118,7 @@ export default function AttendanceDetail() {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Chi tiết chấm công</h1>
-            <p className="text-muted text-sm mt-1">{record.employeeName} &middot; {record.workDate}</p>
+            <p className="text-muted text-sm mt-1">{record.employeeName} &middot; {record.date}</p>
           </div>
           <span className="px-3 py-1 rounded-full text-sm font-semibold"
             style={{ backgroundColor: cfg.color + '18', color: cfg.color }}>
@@ -86,17 +128,16 @@ export default function AttendanceDetail() {
 
         <div className="card mb-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <InfoRow icon={CalendarDays} label="Ngày làm việc" value={record.workDate} />
-            <InfoRow icon={MapPin} label="Chi nhánh" value={record.branchName || '—'} />
+            <InfoRow icon={CalendarDays} label="Ngày làm việc" value={record.date} />
             <InfoRow icon={Clock} label="Giờ dự kiến" value={record.scheduledStart && record.scheduledEnd ? `${record.scheduledStart} - ${record.scheduledEnd}` : '—'} />
             <InfoRow icon={LogIn} label="Check-in" value={record.checkIn || '—'} color={record.checkIn ? '#10b981' : undefined} />
             <InfoRow icon={LogOut} label="Check-out" value={record.checkOut || '—'} color={record.checkOut ? '#10b981' : undefined} />
-            <InfoRow icon={Clock} label="Tổng thời gian" value={formatMinutes(record.workedMinutes) || '—'} />
+            <InfoRow icon={Clock} label="Tổng thời gian" value={record.workedMinutesFormatted || '—'} />
             {record.lateMinutes > 0 && (
-              <InfoRow icon={AlertTriangle} label="Đi trễ" value={formatMinutes(record.lateMinutes)} color="#f59e0b" />
+              <InfoRow icon={AlertTriangle} label="Đi trễ" value={record.lateMinutesFormatted} color="#f59e0b" />
             )}
             {record.earlyLeaveMinutes > 0 && (
-              <InfoRow icon={AlertTriangle} label="Về sớm" value={formatMinutes(record.earlyLeaveMinutes)} color="#f59e0b" />
+              <InfoRow icon={AlertTriangle} label="Về sớm" value={record.earlyLeaveMinutesFormatted} color="#f59e0b" />
             )}
             <InfoRow icon={CheckCircle} label="Trạng thái" value={cfg.label} color={cfg.color} />
           </div>
@@ -121,8 +162,10 @@ export default function AttendanceDetail() {
               ) : (
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm text-muted flex-1">{record.note || 'Chưa có ghi chú'}</p>
-                  <button className="text-xs text-primary font-semibold hover:underline cursor-pointer flex-shrink-0"
-                    onClick={() => setEditing(true)}>Sửa</button>
+                  {hasPermission('hr.attendance.update') && (
+                    <button className="text-xs text-primary font-semibold hover:underline cursor-pointer flex-shrink-0"
+                      onClick={() => setEditing(true)}>Sửa</button>
+                  )}
                 </div>
               )}
             </div>

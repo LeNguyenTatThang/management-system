@@ -6,3 +6,717 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+enum SalaryType {
+  MONTHLY
+  PER_SHIFT
+}
+
+enum RoleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum WorkScheduleStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PENDING
+  WORKING
+  LATE
+  EARLY_LEAVE
+  LATE_EARLY
+  COMPLETED
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum IngredientStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum VoucherType {
+  FIXED
+  PERCENTAGE
+}
+
+enum VoucherStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+enum PromotionType {
+  FIXED
+  PERCENTAGE
+}
+
+enum PromotionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PromotionScope {
+  TIMEFRAME
+  PRODUCT
+  CATEGORY
+}
+
+enum ImportStatus {
+  DRAFT
+  CONFIRMED
+  RECEIVED
+  CANCELLED
+}
+
+enum ExportStatus {
+  DRAFT
+  CONFIRMED
+  EXPORTED
+  CANCELLED
+}
+
+enum ExportType {
+  USE
+  DISPOSAL
+  TRANSFER
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  OTHER
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  ERROR
+  REFUNDED
+}
+
+// ============================================================
+// NHÂN SỰ (HR)
+// ============================================================
+
+model Role {
+  id          Int        @id @default(autoincrement())
+  name        String
+  code        String     @unique
+  description String?
+  isSystem    Boolean    @default(false)
+  status      RoleStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  employees       Employee[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id     Int    @id @default(autoincrement())
+  group  String // e.g. sales, inventory, hr
+  module String // e.g. orders, products
+  key    String // e.g. view, create, edit
+  label  String
+
+  rolePermissions RolePermission[]
+
+  @@unique([group, module, key])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model Employee {
+  id                 Int            @id @default(autoincrement())
+  name               String
+  email              String         @unique
+  phone              String?
+  dateOfBirth        DateTime?
+  gender             Gender?
+  citizenId          String?        @unique
+  address            String?
+  avatar             String?
+  password           String
+  roleId             Int?
+  role               Role?          @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  startDate          DateTime?
+  status             EmployeeStatus @default(ACTIVE)
+  salaryType         SalaryType     @default(MONTHLY)
+  salary             Decimal?       @db.Decimal(12, 2)
+  monthlyLeaveDays   Int            @default(0)
+  remainingLeaveDays Int            @default(0)
+  note               String?        @db.Text
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  workSchedules    WorkSchedule[]
+  attendance       Attendance[]
+  leaveRequests    LeaveRequest[]
+  orders           Order[]
+  importsCreated   InventoryImport[] @relation("ImportCreatedBy")
+  exportsCreated   InventoryExport[] @relation("ExportCreatedBy")
+  exportsConfirmed InventoryExport[] @relation("ExportConfirmedBy")
+  exportsExecuted  InventoryExport[] @relation("ExportExecutedBy")
+
+  @@index([roleId])
+  @@index([status])
+  @@index([email])
+  @@map("employees")
+}
+
+model Shift {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  startTime   String?
+  endTime     String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workSchedules WorkSchedule[]
+
+  @@index([active])
+  @@map("shifts")
+}
+
+model WorkSchedule {
+  id         Int                @id @default(autoincrement())
+  employeeId Int
+  employee   Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime
+  shiftId    Int
+  shift      Shift              @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     WorkScheduleStatus @default(SCHEDULED)
+  note       String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  attendance Attendance[]
+
+  @@unique([employeeId, date, shiftId])
+  @@index([date])
+  @@index([shiftId])
+  @@map("work_schedules")
+}
+
+model Attendance {
+  id                Int              @id @default(autoincrement())
+  employeeId        Int
+  employee          Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date              DateTime
+  scheduleId        Int?
+  schedule          WorkSchedule?    @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  checkIn           DateTime?
+  checkOut          DateTime?
+  scheduledStart    String?
+  scheduledEnd      String?
+  workedMinutes     Int?
+  lateMinutes       Int?
+  earlyLeaveMinutes Int?
+  status            AttendanceStatus @default(PENDING)
+  note              String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([employeeId, date])
+  @@index([date])
+  @@index([status])
+  @@index([scheduleId])
+  @@map("attendance")
+}
+
+model LeaveRequest {
+  id            Int                @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  startDateTime DateTime
+  endDateTime   DateTime
+  reason        String?            @db.Text
+  status        LeaveRequestStatus @default(PENDING)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+// ============================================================
+// MÓN / CÔNG THỨC (Catalog)
+// ============================================================
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products            Product[]
+  promotionCategories PromotionCategory[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String?       @db.Text
+  price       Decimal       @db.Decimal(12, 2)
+  costPrice   Decimal?      @db.Decimal(12, 2)
+  image       String?
+  size        String?
+  categoryId  Int?
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  status      ProductStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  recipe            Recipe?
+  productSetups     ProductSetup[]
+  orderItems        OrderItem[]
+  promotionProducts PromotionProduct[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@map("products")
+}
+
+model Setup {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  productSetups ProductSetup[]
+
+  @@map("setups")
+}
+
+model ProductSetup {
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  setupId   Int
+  setup     Setup   @relation(fields: [setupId], references: [id], onDelete: Cascade)
+  quantity  Int     @default(1)
+
+  @@id([productId, setupId])
+  @@index([setupId])
+  @@map("product_setups")
+}
+
+model Ingredient {
+  id                 Int              @id @default(autoincrement())
+  name               String
+  description        String?
+  unitId             Int
+  unit               Unit             @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  category           String?
+  supplierId         Int?
+  supplier           Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  stock              Decimal          @default(0) @db.Decimal(12, 3)
+  minStock           Decimal?         @db.Decimal(12, 3)
+  averageImportPrice Decimal?         @db.Decimal(12, 2)
+  costPrice          Decimal?         @db.Decimal(12, 2)
+  isFreeIngredient   Boolean          @default(false)
+  status             IngredientStatus @default(ACTIVE)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  recipeIngredients RecipeIngredient[]
+  importItems       InventoryImportItem[]
+  exportItems       InventoryExportItem[]
+
+  @@index([unitId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([name])
+  @@map("ingredients")
+}
+
+model Unit {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  symbol      String?
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ingredients       Ingredient[]
+  recipeIngredients RecipeIngredient[]
+  importItems       InventoryImportItem[]
+  exportItems       InventoryExportItem[]
+
+  @@map("units")
+}
+
+model Recipe {
+  id           Int      @id @default(autoincrement())
+  productId    Int?     @unique
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name         String
+  description  String?  @db.Text
+  instructions String?  @db.Text
+  image        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  recipeIngredients RecipeIngredient[]
+
+  @@index([productId])
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id           Int        @id @default(autoincrement())
+  recipeId     Int
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientId Int
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  quantity     Decimal    @db.Decimal(12, 3)
+  unitId       Int
+  unit         Unit       @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  note         String?
+
+  @@unique([recipeId, ingredientId])
+  @@index([ingredientId])
+  @@index([unitId])
+  @@map("recipe_ingredients")
+}
+
+// ============================================================
+// KHO (Inventory)
+// ============================================================
+
+model Supplier {
+  id            Int            @id @default(autoincrement())
+  name          String
+  contactPerson String?
+  email         String?        @unique
+  phone         String?
+  address       String?
+  description   String?        @db.Text
+  note          String?        @db.Text
+  status        SupplierStatus @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  ingredients Ingredient[]
+
+  @@index([status])
+  @@map("suppliers")
+}
+
+model InventoryImport {
+  id            Int          @id @default(autoincrement())
+  code          String?      @unique
+  importDate    DateTime
+  note          String?      @db.Text
+  createdById   Int?
+  createdBy     Employee?    @relation("ImportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdByName String
+  status        ImportStatus @default(DRAFT)
+  confirmedAt   DateTime?
+  receivedAt    DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  items InventoryImportItem[]
+
+  @@index([createdById])
+  @@index([status])
+  @@index([importDate])
+  @@map("inventory_imports")
+}
+
+model InventoryImportItem {
+  id             Int             @id @default(autoincrement())
+  importReceipt  InventoryImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  importId       Int
+  ingredientId   Int
+  ingredient     Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  quantity       Decimal         @db.Decimal(12, 3)
+  unitId         Int
+  unit           Unit            @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  unitPrice      Decimal?        @db.Decimal(12, 2)
+  amount         Decimal?        @db.Decimal(12, 2)
+  expirationDate DateTime?
+  note           String?
+
+  @@index([importId])
+  @@index([ingredientId])
+  @@map("inventory_import_items")
+}
+
+model InventoryExport {
+  id            Int          @id @default(autoincrement())
+  code          String?      @unique
+  exportDate    DateTime
+  exportType    ExportType   @default(USE)
+  note          String?      @db.Text
+  createdById   Int?
+  createdBy     Employee?    @relation("ExportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdByName String
+  confirmedById Int?
+  confirmedBy   Employee?    @relation("ExportConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  exportedById  Int?
+  exportedBy    Employee?    @relation("ExportExecutedBy", fields: [exportedById], references: [id], onDelete: SetNull)
+  status        ExportStatus @default(DRAFT)
+  confirmedAt   DateTime?
+  exportedAt    DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  items InventoryExportItem[]
+
+  @@index([createdById])
+  @@index([confirmedById])
+  @@index([status])
+  @@index([exportDate])
+  @@map("inventory_exports")
+}
+
+model InventoryExportItem {
+  id                Int             @id @default(autoincrement())
+  exportId          Int
+  export            InventoryExport @relation(fields: [exportId], references: [id], onDelete: Cascade)
+  ingredientId      Int
+  ingredient        Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  requestedQuantity Decimal         @db.Decimal(12, 3)
+  actualQuantity    Decimal?        @db.Decimal(12, 3)
+  unitId            Int
+  unit              Unit            @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  note              String?
+
+  @@index([exportId])
+  @@index([ingredientId])
+  @@map("inventory_export_items")
+}
+
+// ============================================================
+// BÁN HÀNG (Sales / POS)
+// ============================================================
+
+model Order {
+  id                Int           @id @default(autoincrement())
+  code              String?       @unique
+  customerId        Int?
+  customer          Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  staffId           Int?
+  staff             Employee?     @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  status            OrderStatus   @default(PENDING)
+  paymentMethod     PaymentMethod @default(CASH)
+  paymentStatus     PaymentStatus @default(UNPAID)
+  subtotal          Decimal       @default(0) @db.Decimal(12, 2)
+  promotionDiscount Decimal       @default(0) @db.Decimal(12, 2)
+  couponDiscount    Decimal       @default(0) @db.Decimal(12, 2)
+  discount          Decimal       @default(0) @db.Decimal(12, 2)
+  total             Decimal       @default(0) @db.Decimal(12, 2)
+  note              String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  items         OrderItem[]
+  voucherUsages VoucherUsage[]
+
+  @@index([customerId])
+  @@index([staffId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity  Int
+  unitPrice Decimal @db.Decimal(12, 2)
+  subtotal  Decimal @db.Decimal(12, 2)
+  note      String?
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// ============================================================
+// VOUCHER / KHUYẾN MÃI
+// ============================================================
+
+model Voucher {
+  id          Int           @id @default(autoincrement())
+  code        String        @unique
+  name        String?
+  description String?       @db.Text
+  type        VoucherType
+  value       Decimal       @db.Decimal(12, 2)
+  minOrder    Decimal?      @db.Decimal(12, 2)
+  maxDiscount Decimal?      @db.Decimal(12, 2)
+  usageLimit  Int?
+  startAt     DateTime?
+  endAt       DateTime?
+  status      VoucherStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  usages VoucherUsage[]
+
+  @@index([status])
+  @@map("vouchers")
+}
+
+model VoucherUsage {
+  id         Int       @id @default(autoincrement())
+  voucherId  Int
+  voucher    Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  customerId Int?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orderId    Int?
+  order      Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  usedAt     DateTime  @default(now())
+
+  @@index([voucherId])
+  @@index([customerId])
+  @@index([orderId])
+  @@map("voucher_usages")
+}
+
+model Promotion {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?         @db.Text
+  type        PromotionType
+  value       Decimal         @db.Decimal(12, 2)
+  scope       PromotionScope  @default(PRODUCT)
+  timeStart   String?
+  timeEnd     String?
+  startAt     DateTime?
+  endAt       DateTime?
+  status      PromotionStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  promotionProducts   PromotionProduct[]
+  promotionCategories PromotionCategory[]
+
+  @@index([status])
+  @@index([startAt])
+  @@map("promotions")
+}
+
+model PromotionProduct {
+  promotionId Int
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  productId   Int
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([promotionId, productId])
+  @@index([productId])
+  @@map("promotion_products")
+}
+
+model PromotionCategory {
+  promotionId Int
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  categoryId  Int
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([promotionId, categoryId])
+  @@index([categoryId])
+  @@map("promotion_categories")
+}
+
+// ============================================================
+// CUSTOMER FOUNDATION
+// ============================================================
+
+model Customer {
+  id          Int       @id @default(autoincrement())
+  name        String
+  email       String?   @unique
+  phone       String?
+  address     String?
+  dateOfBirth DateTime?
+  gender      Gender?
+  note        String?   @db.Text
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  orders        Order[]
+  voucherUsages VoucherUsage[]
+
+  @@index([phone])
+  @@index([active])
+  @@map("customers")
+}
