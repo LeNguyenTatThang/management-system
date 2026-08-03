@@ -1,35 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIngredient } from '../../contexts/IngredientContext';
-import { ArrowLeft, Package, Info, ToggleLeft } from 'lucide-react';
+import { ArrowLeft, Info, ToggleLeft } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import FormSection from '../../components/ui/FormSection';
 import { toast } from 'react-hot-toast';
 
-const CATEGORIES = ['Cà phê', 'Sữa', 'Trà', 'Đường', 'Trái cây', 'Syrup', 'Topping', 'Khác'];
-const UNITS = ['Kg', 'Gram', 'Lít', 'Ml', 'Hộp', 'Chai', 'Gói', 'Cái'];
-
 export default function IngredientCreate() {
-  const { addIngredient } = useIngredient();
+  const { addIngredient, units, fetchUnits } = useIngredient();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [unit, setUnit] = useState('Kg');
+  const [unitId, setUnitId] = useState('');
   const [stock, setStock] = useState('');
-  const [averageImportPrice, setAverageImportPrice] = useState('');
-  const [active, setActive] = useState(true);
+  const [minStock, setMinStock] = useState('');
+  const [costPrice, setCostPrice] = useState('');
   const [isFreeIngredient, setIsFreeIngredient] = useState(false);
+  const [status, setStatus] = useState('ACTIVE');
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchUnits();
+  }, [fetchUnits]);
 
   const validate = () => {
     const errs = {};
     if (!name.trim()) errs.name = 'Tên nguyên liệu không được để trống';
-    if (!category) errs.category = 'Vui lòng chọn loại nguyên liệu';
-    if (!unit) errs.unit = 'Vui lòng chọn đơn vị tính';
+    if (!unitId) errs.unitId = 'Vui lòng chọn đơn vị tính';
     if (stock !== '' && (isNaN(Number(stock)) || Number(stock) < 0)) errs.stock = 'Tồn kho không được âm';
-    if (averageImportPrice !== '' && (isNaN(Number(averageImportPrice)) || Number(averageImportPrice) < 0)) errs.averageImportPrice = 'Giá nhập không được âm';
+    if (minStock !== '' && (isNaN(Number(minStock)) || Number(minStock) < 0)) errs.minStock = 'Tồn kho tối thiểu không được âm';
+    if (costPrice !== '' && (isNaN(Number(costPrice)) || Number(costPrice) < 0)) errs.costPrice = 'Giá vốn không được âm';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -41,15 +44,19 @@ export default function IngredientCreate() {
     try {
       await addIngredient({
         name: name.trim(),
-        category,
-        unit,
+        description: description.trim() || undefined,
+        category: category.trim() || undefined,
+        unitId: Number(unitId),
         stock: stock === '' ? 0 : Number(stock),
-        averageImportPrice: averageImportPrice === '' ? 0 : Number(averageImportPrice),
-        active,
-        isFreeIngredient
+        minStock: minStock ? Number(minStock) : undefined,
+        costPrice: costPrice ? Number(costPrice) : undefined,
+        isFreeIngredient,
+        status,
       });
       toast.success('Thêm nguyên vật liệu thành công');
       navigate('/ingredients');
+    } catch (e) {
+      toast.error(e.message || 'Không thể thêm nguyên liệu');
     } finally {
       setSaving(false);
     }
@@ -85,34 +92,40 @@ export default function IngredientCreate() {
                 {errors.name && <p className="text-xs text-danger mt-1">{errors.name}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Loại nguyên liệu <span className="text-danger">*</span></label>
-                <select className={`w-full modal-input ${errors.category ? 'border-danger' : ''}`} value={category} onChange={e => setCategory(e.target.value)}>
-                  <option value="">-- Chọn loại --</option>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                <label className="block text-sm font-semibold mb-1.5">Đơn vị tính <span className="text-danger">*</span></label>
+                <select className={`w-full modal-input ${errors.unitId ? 'border-danger' : ''}`} value={unitId} onChange={e => setUnitId(e.target.value)}>
+                  <option value="">-- Chọn đơn vị --</option>
+                  {units.map(u => <option key={u.id} value={u.id}>{u.name}{u.symbol ? ` (${u.symbol})` : ''}</option>)}
                 </select>
-                {errors.category && <p className="text-xs text-danger mt-1">{errors.category}</p>}
+                {errors.unitId && <p className="text-xs text-danger mt-1">{errors.unitId}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Đơn vị tính <span className="text-danger">*</span></label>
-                <select className={`w-full modal-input ${errors.unit ? 'border-danger' : ''}`} value={unit} onChange={e => setUnit(e.target.value)}>
-                  {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
-                {errors.unit && <p className="text-xs text-danger mt-1">{errors.unit}</p>}
+                <label className="block text-sm font-semibold mb-1.5">Phân loại</label>
+                <input type="text" placeholder="VD: Cà phê, Sữa, Trà..." className="w-full modal-input"
+                  value={category} onChange={e => setCategory(e.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-1.5">Mô tả</label>
+                <textarea placeholder="Mô tả nguyên liệu (không bắt buộc)" className="w-full modal-input" rows={2}
+                  value={description} onChange={e => setDescription(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Tồn kho ban đầu</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" min="0" placeholder="0" className={`w-full modal-input ${errors.stock ? 'border-danger' : ''}`}
-                    value={stock} onChange={e => setStock(e.target.value)} />
-                  <span className="text-sm font-semibold text-muted min-w-10">{unit}</span>
-                </div>
+                <input type="number" min="0" step="any" placeholder="0" className={`w-full modal-input ${errors.stock ? 'border-danger' : ''}`}
+                  value={stock} onChange={e => setStock(e.target.value)} />
                 {errors.stock && <p className="text-xs text-danger mt-1">{errors.stock}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1.5">Giá nhập trung bình</label>
-                <input type="number" min="0" placeholder="Nhập giá nhập..." className={`w-full modal-input ${errors.averageImportPrice ? 'border-danger' : ''}`}
-                  value={averageImportPrice} onChange={e => setAverageImportPrice(e.target.value)} />
-                {errors.averageImportPrice && <p className="text-xs text-danger mt-1">{errors.averageImportPrice}</p>}
+                <label className="block text-sm font-semibold mb-1.5">Tồn kho tối thiểu</label>
+                <input type="number" min="0" step="any" placeholder="0" className={`w-full modal-input ${errors.minStock ? 'border-danger' : ''}`}
+                  value={minStock} onChange={e => setMinStock(e.target.value)} />
+                {errors.minStock && <p className="text-xs text-danger mt-1">{errors.minStock}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1.5">Giá vốn (VND)</label>
+                <input type="number" min="0" placeholder="0" className={`w-full modal-input ${errors.costPrice ? 'border-danger' : ''}`}
+                  value={costPrice} onChange={e => setCostPrice(e.target.value)} />
+                {errors.costPrice && <p className="text-xs text-danger mt-1">{errors.costPrice}</p>}
               </div>
             </div>
           </FormSection>
@@ -120,13 +133,13 @@ export default function IngredientCreate() {
           <FormSection icon={ToggleLeft} title="TRẠNG THÁI" className="mb-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold">Đang sử dụng</div>
+                <div className="text-sm font-semibold">Trạng thái</div>
                 <div className="text-xs text-muted mt-0.5">Cho phép sử dụng nguyên liệu</div>
               </div>
-              <label className="switch flex-shrink-0">
-                <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} />
-                <span className="switch-slider" />
-              </label>
+              <select className="w-40 modal-input" value={status} onChange={e => setStatus(e.target.value)}>
+                <option value="ACTIVE">Đang dùng</option>
+                <option value="INACTIVE">Ngừng dùng</option>
+              </select>
             </div>
             <div className="border-t border-soft pt-4">
               <div className="flex items-center justify-between gap-4">
@@ -149,21 +162,6 @@ export default function IngredientCreate() {
             </button>
           </div>
         </form>
-
-        <div className="card">
-          <div className="flex items-start gap-3 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Package size={16} className="text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-bold text-base">LỊCH SỬ NHẬP NGUYÊN VẬT LIỆU TRONG THÁNG</h3>
-            </div>
-          </div>
-          <div className="text-center text-muted py-8 bg-bg rounded-lg">
-            <Package size={32} className="mx-auto mb-3 opacity-30" />
-            <p>Chưa có lịch sử nhập nguyên vật liệu trong tháng này.</p>
-          </div>
-        </div>
       </div>
     </PageContainer>
   );
