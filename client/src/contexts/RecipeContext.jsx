@@ -1,77 +1,74 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-
-const STORAGE_KEY = 'dezlab_recipes';
-
-const initialRecipes = [
-  {
-    id: 'RC01', productId: 'CF001', productName: 'Cà phê sữa',
-    image: 'https://coffee.alexflipnote.dev/random?1',
-    note: 'Công thức cà phê sữa truyền thống, phù hợp khẩu vị người Việt.',
-    instructions: [
-      'Chiết xuất 18g cà phê - 36ml',
-      'Cho sữa đặc vào ly khuấy đều',
-      'Cho đá vào ly',
-      'Phục vụ kèm khay và trà đá'
-    ],
-    ingredients: [
-      { ingredientId: 'NL01', amount: 18, note: 'Rang vừa' },
-      { ingredientId: 'NL02', amount: 20, note: '' },
-    ]
-  },
-  {
-    id: 'RC02', productId: 'TR001', productName: 'Trà đào cam sả',
-    image: 'https://coffee.alexflipnote.dev/random?3',
-    note: 'Trà đào cam sả tươi mát, thích hợp cho mùa hè.',
-    instructions: [
-      'Hãm trà túi lọc với 300ml nước sôi trong 5 phút',
-      'Cắt cam sả lát mỏng',
-      'Pha siro đào vào ly',
-      'Thêm đá và trang trí'
-    ],
-    ingredients: [
-      { ingredientId: 'NL05', amount: 1, note: '' },
-      { ingredientId: 'NL03', amount: 10, note: 'Đường kính' },
-    ]
-  },
-];
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : initialRecipes;
-  } catch { return initialRecipes; }
-}
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import {
+  getRecipes,
+  getRecipe,
+  createRecipe,
+  updateRecipe,
+  deleteRecipe,
+} from '../services/recipeService';
 
 const RecipeContext = createContext(null);
 
 export function RecipeProvider({ children }) {
-  const [recipes, setRecipes] = useState(loadData);
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const addRecipe = useCallback(async (recipe) => {
-    const newItem = { id: `RC${String(recipes.length + 1).padStart(2, '0')}`, ...recipe };
-    const updated = [...recipes, newItem];
-    setRecipes(updated);
-    saveData(updated);
-  }, [recipes]);
+  const fetchRecipes = useCallback(async (params) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getRecipes(params);
+      setRecipes(data);
+    } catch (e) {
+      setError(e.message || 'Không thể tải danh sách công thức');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const updateRecipe = useCallback(async (id, data) => {
-    const updated = recipes.map(r => r.id === id ? { ...r, ...data } : r);
-    setRecipes(updated);
-    saveData(updated);
-  }, [recipes]);
+  useEffect(() => {
+    fetchRecipes();
+  }, [fetchRecipes]);
 
-  const deleteRecipe = useCallback(async (id) => {
-    const updated = recipes.filter(r => r.id !== id);
-    setRecipes(updated);
-    saveData(updated);
-  }, [recipes]);
+  const getRecipeById = useCallback(async (id) => {
+    try {
+      return await getRecipe(id);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const addRecipe = useCallback(async (data) => {
+    const created = await createRecipe(data);
+    setRecipes((prev) => [...prev, created]);
+    return created;
+  }, []);
+
+  const editRecipe = useCallback(async (id, data) => {
+    const updated = await updateRecipe(id, data);
+    setRecipes((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    return updated;
+  }, []);
+
+  const removeRecipe = useCallback(async (id) => {
+    await deleteRecipe(id);
+    setRecipes((prev) => prev.filter((r) => r.id !== id));
+  }, []);
 
   return (
-    <RecipeContext.Provider value={{ recipes, addRecipe, updateRecipe, deleteRecipe }}>
+    <RecipeContext.Provider
+      value={{
+        recipes,
+        loading,
+        error,
+        fetchRecipes,
+        getRecipeById,
+        addRecipe,
+        editRecipe,
+        removeRecipe,
+      }}
+    >
       {children}
     </RecipeContext.Provider>
   );

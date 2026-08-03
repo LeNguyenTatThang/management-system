@@ -12,6 +12,8 @@ import { LeaveRequestModule } from './modules/leave-request/leave-request.module
 import { CategoryModule } from './modules/category/category.module';
 import { SetupModule } from './modules/setup/setup.module';
 import { ProductModule } from './modules/product/product.module';
+import { IngredientModule } from './modules/ingredient/ingredient.module';
+import { RecipeModule } from './modules/recipe/recipe.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { ProductModule } from './modules/product/product.module';
     CategoryModule,
     SetupModule,
     ProductModule,
+    IngredientModule,
+    RecipeModule,
   ],
   providers: [
     {

@@ -21,6 +21,7 @@ import ProductCreate from './pages/dishes/ProductCreate';
 import ProductDetail from './pages/dishes/ProductDetail';
 import Recipes from './pages/recipes/Recipes';
 import RecipeComponentCreate from './pages/recipes/RecipeComponentCreate';
+import RecipeDetail from './pages/recipes/RecipeDetail';
 import POS from './pages/pos/POS';
 import Ingredients from './pages/ingredients/Ingredients';
 import IngredientCreate from './pages/ingredients/IngredientCreate';
@@ -87,6 +88,8 @@ function AppRoutes() {
         <Route path="products/:id/edit" element={<ProductCreate />} />
         <Route path="recipes" element={<Recipes />} />
         <Route path="recipes/new" element={<RecipeComponentCreate />} />
+        <Route path="recipes/:id" element={<RecipeDetail />} />
+        <Route path="recipes/:id/edit" element={<RecipeComponentCreate />} />
         <Route path="pos" element={<POS />} />
         <Route path="orders/create" element={<OrderCreate />} />
         <Route path="orders/:id" element={<OrderDetail />} />
