@@ -129,6 +129,12 @@ enum AdjustmentStatus {
   CANCELLED
 }
 
+enum StocktakeStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
 enum StockMovementType {
   IMPORT
   EXPORT
@@ -144,6 +150,7 @@ enum ReferenceType {
   INVENTORY_IMPORT
   INVENTORY_EXPORT
   INVENTORY_ADJUSTMENT
+  INVENTORY_STOCKTAKE
 }
 
 enum OrderStatus {
@@ -245,6 +252,8 @@ model Employee {
   adjustmentsCreated   InventoryAdjustment[] @relation("AdjustmentCreatedBy")
   adjustmentsConfirmed InventoryAdjustment[] @relation("AdjustmentConfirmedBy")
   stockMovementsPerformed StockMovement[]    @relation("StockMovementPerformer")
+  stocktakesCreated    InventoryStocktake[]  @relation("StocktakeCreatedBy")
+  stocktakesConfirmed  InventoryStocktake[]  @relation("StocktakeConfirmedBy")
 
   @@index([roleId])
   @@index([status])
@@ -422,6 +431,7 @@ model Ingredient {
   exportItems          InventoryExportItem[]
   adjustmentItems      InventoryAdjustmentItem[]
   stockMovements       StockMovement[]
+  stocktakeItems       InventoryStocktakeItem[]
 
   @@index([unitId])
   @@index([supplierId])
@@ -445,6 +455,7 @@ model Unit {
   exportItems         InventoryExportItem[]
   adjustmentItems     InventoryAdjustmentItem[]
   stockMovements      StockMovement[]
+  stocktakeItems      InventoryStocktakeItem[]
 
   @@map("units")
 }
@@ -669,6 +680,53 @@ model StockMovement {
   @@index([direction])
   @@index([createdAt])
   @@map("stock_movements")
+}
+
+// ============================================================
+// KIỂM KÊ KHO (Inventory Stocktake)
+// ============================================================
+
+model InventoryStocktake {
+  id            Int             @id @default(autoincrement())
+  code          String?         @unique
+  stocktakeDate DateTime
+  status        StocktakeStatus @default(DRAFT)
+  note          String?         @db.Text
+  createdById   Int?
+  createdBy     Employee?       @relation("StocktakeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdByName String
+  confirmedById Int?
+  confirmedBy   Employee?       @relation("StocktakeConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  confirmedAt   DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  items InventoryStocktakeItem[]
+
+  @@index([createdById])
+  @@index([confirmedById])
+  @@index([status])
+  @@index([stocktakeDate])
+  @@map("inventory_stocktakes")
+}
+
+model InventoryStocktakeItem {
+  id              Int                @id @default(autoincrement())
+  stocktakeId     Int
+  stocktake       InventoryStocktake @relation(fields: [stocktakeId], references: [id], onDelete: Cascade)
+  ingredientId    Int
+  ingredient      Ingredient         @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  unitId          Int
+  unit            Unit               @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  systemQuantity  Decimal            @db.Decimal(12, 3)
+  actualQuantity  Decimal            @db.Decimal(12, 3)
+  difference      Decimal            @db.Decimal(12, 3)
+  note            String?
+
+  @@index([stocktakeId])
+  @@index([ingredientId])
+  @@map("inventory_stocktake_items")
 }
 
 // ============================================================

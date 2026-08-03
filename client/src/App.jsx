@@ -16,6 +16,7 @@ import { ImportReceiptProvider } from './contexts/ImportReceiptContext';
 import { InventoryExportProvider } from './contexts/InventoryExportContext';
 import { InventoryAdjustmentProvider } from './contexts/InventoryAdjustmentContext';
 import { StockLedgerProvider } from './contexts/StockLedgerContext';
+import { InventoryStocktakeProvider } from './contexts/InventoryStocktakeContext';
 import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/dashboard/Dashboard';
 import MenuProducts from './pages/dishes/MenuProducts';
@@ -69,6 +70,10 @@ import AdjustmentDetail from './pages/inventory/adjustments/AdjustmentDetail';
 import AdjustmentEdit from './pages/inventory/adjustments/AdjustmentEdit';
 import StockLedgerList from './pages/inventory/stock-ledger/StockLedgerList';
 import StockLedgerDetail from './pages/inventory/stock-ledger/StockLedgerDetail';
+import StocktakeList from './pages/inventory/stocktakes/StocktakeList';
+import StocktakeCreate from './pages/inventory/stocktakes/StocktakeCreate';
+import StocktakeDetail from './pages/inventory/stocktakes/StocktakeDetail';
+import StocktakeEdit from './pages/inventory/stocktakes/StocktakeEdit';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -129,6 +134,10 @@ function AppRoutes() {
         <Route path="inventory/adjustments/:id/edit" element={<AdjustmentEdit />} />
         <Route path="inventory/stock-ledger" element={<StockLedgerList />} />
         <Route path="inventory/stock-ledger/:id" element={<StockLedgerDetail />} />
+        <Route path="inventory/stocktakes" element={<StocktakeList />} />
+        <Route path="inventory/stocktakes/create" element={<StocktakeCreate />} />
+        <Route path="inventory/stocktakes/:id" element={<StocktakeDetail />} />
+        <Route path="inventory/stocktakes/:id/edit" element={<StocktakeEdit />} />
         <Route path="schedules" element={<Schedules />} />
         <Route path="schedules/create" element={<ScheduleCreate />} />
         <Route path="schedules/:id" element={<ScheduleDetail />} />
@@ -165,9 +174,11 @@ function App() {
           <ImportReceiptProvider>
           <InventoryExportProvider>
           <InventoryAdjustmentProvider>
+          <InventoryStocktakeProvider>
           <StockLedgerProvider>
           <AppRoutes />
           </StockLedgerProvider>
+          </InventoryStocktakeProvider>
           </InventoryAdjustmentProvider>
           </InventoryExportProvider>
           </ImportReceiptProvider>

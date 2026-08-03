@@ -37,6 +37,7 @@ const navGroups = [
       { name: 'Xuất kho', icon: LogOut, path: '/inventory/exports' },
       { name: 'Điều chỉnh kho', icon: ClipboardCheck, path: '/inventory/adjustments' },
       { name: 'Biến động kho', icon: ArrowUpDown, path: '/inventory/stock-ledger' },
+      { name: 'Kiểm kê kho', icon: ClipboardCheck, path: '/inventory/stocktakes' },
     ],
   },
   {
