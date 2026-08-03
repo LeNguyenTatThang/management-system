@@ -1,122 +1,83 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-
-const STORAGE_KEY = 'dezlab_leave_requests';
-
-function generateId() {
-  const num = Date.now().toString().slice(-5);
-  return `LR${num}`;
-}
-
-function nowISO() {
-  return new Date().toISOString();
-}
-
-const initialRequests = [
-  {
-    id: 'LR00001',
-    employeeId: 'NV01',
-    employeeName: 'Nguyễn Văn A',
-    employeeRole: 'Quản lý',
-    startDate: '25/07/2026',
-    startTime: '08:00',
-    endDate: '25/07/2026',
-    endTime: '17:00',
-    reason: 'Nghỉ ốm, cần đi khám bệnh',
-    status: 'approved',
-    createdAt: '2026-07-23T08:00:00.000Z',
-    updatedAt: '2026-07-23T10:30:00.000Z',
-  },
-  {
-    id: 'LR00002',
-    employeeId: 'NV02',
-    employeeName: 'Trần Thị B',
-    employeeRole: 'Thu ngân',
-    startDate: '28/07/2026',
-    startTime: '08:00',
-    endDate: '28/07/2026',
-    endTime: '12:00',
-    reason: 'Có việc gia đình',
-    status: 'pending',
-    createdAt: '2026-07-24T09:15:00.000Z',
-    updatedAt: '2026-07-24T09:15:00.000Z',
-  },
-  {
-    id: 'LR00003',
-    employeeId: 'NV03',
-    employeeName: 'Lê Văn C',
-    employeeRole: 'Nhân viên pha chế',
-    startDate: '27/07/2026',
-    startTime: '08:00',
-    endDate: '29/07/2026',
-    endTime: '17:00',
-    reason: 'Nghỉ phép về quê',
-    status: 'rejected',
-    createdAt: '2026-07-22T14:00:00.000Z',
-    updatedAt: '2026-07-23T09:00:00.000Z',
-  },
-];
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return initialRequests;
-}
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import {
+  getLeaveRequests,
+  getLeaveRequest,
+  createLeaveRequest,
+  updateLeaveRequest,
+  approveLeaveRequest,
+  rejectLeaveRequest,
+} from '../services/leaveRequestService';
 
 const LeaveContext = createContext(null);
 
 export function LeaveProvider({ children }) {
-  const [requests, setRequests] = useState(loadData);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const sync = useCallback((fn) => {
-    setRequests(prev => {
-      const next = fn(prev);
-      saveData(next);
-      return next;
-    });
+  const fetchRequests = useCallback(async (params) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getLeaveRequests(params);
+      setRequests(data);
+    } catch (e) {
+      setError(e.message || 'Không thể tải danh sách đơn xin nghỉ phép');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const createRequest = useCallback((data) => {
-    const newRequest = {
-      id: generateId(),
-      ...data,
-      status: 'pending',
-      createdAt: nowISO(),
-      updatedAt: nowISO(),
-    };
-    sync(prev => [...prev, newRequest]);
-    return newRequest;
-  }, [sync]);
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
-  const approveRequest = useCallback((id) => {
-    sync(prev => prev.map(r =>
-      r.id === id ? { ...r, status: 'approved', updatedAt: nowISO() } : r
-    ));
-  }, [sync]);
+  const getRequestById = useCallback(async (id) => {
+    try {
+      return await getLeaveRequest(id);
+    } catch (e) {
+      return null;
+    }
+  }, []);
 
-  const rejectRequest = useCallback((id) => {
-    sync(prev => prev.map(r =>
-      r.id === id ? { ...r, status: 'rejected', updatedAt: nowISO() } : r
-    ));
-  }, [sync]);
+  const createRequest = useCallback(async (data) => {
+    const created = await createLeaveRequest(data);
+    setRequests((prev) => [...prev, created]);
+    return created;
+  }, []);
 
-  const getEmployeeRequests = useCallback((employeeId) => {
-    return requests.filter(r => r.employeeId === employeeId);
-  }, [requests]);
+  const updateRequest = useCallback(async (id, data) => {
+    const updated = await updateLeaveRequest(id, data);
+    setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    return updated;
+  }, []);
+
+  const approveRequest = useCallback(async (id) => {
+    const updated = await approveLeaveRequest(id);
+    setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    return updated;
+  }, []);
+
+  const rejectRequest = useCallback(async (id) => {
+    const updated = await rejectLeaveRequest(id);
+    setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    return updated;
+  }, []);
 
   return (
-    <LeaveContext.Provider value={{
-      requests,
-      createRequest,
-      approveRequest,
-      rejectRequest,
-      getEmployeeRequests,
-    }}>
+    <LeaveContext.Provider
+      value={{
+        requests,
+        loading,
+        error,
+        fetchRequests,
+        getRequestById,
+        createRequest,
+        updateRequest,
+        approveRequest,
+        rejectRequest,
+      }}
+    >
       {children}
     </LeaveContext.Provider>
   );

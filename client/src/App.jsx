@@ -50,6 +50,7 @@ import ScheduleEdit from './pages/schedules/ScheduleEdit';
 import Attendance from './pages/attendance/Attendance';
 import AttendanceDetail from './pages/attendance/AttendanceDetail';
 import LeaveRequests from './pages/leave-requests/LeaveRequests';
+import LeaveRequestDetail from './pages/leave-requests/LeaveRequestDetail';
 import ImportReceiptList from './pages/inventory/imports/ImportReceiptList';
 import ImportReceiptCreate from './pages/inventory/imports/ImportReceiptCreate';
 import ImportReceiptDetail from './pages/inventory/imports/ImportReceiptDetail';
@@ -99,6 +100,7 @@ function AppRoutes() {
         <Route path="attendance" element={<Attendance />} />
         <Route path="attendance/:id" element={<AttendanceDetail />} />
         <Route path="leave-requests" element={<LeaveRequests />} />
+        <Route path="leave-requests/:id" element={<LeaveRequestDetail />} />
         <Route path="inventory/imports" element={<ImportReceiptList />} />
         <Route path="inventory/imports/create" element={<ImportReceiptCreate />} />
         <Route path="inventory/imports/:id" element={<ImportReceiptDetail />} />

@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { EmployeeModule } from './modules/employee/employee.module';
 import { WorkScheduleModule } from './modules/work-schedule/work-schedule.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { LeaveRequestModule } from './modules/leave-request/leave-request.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
     EmployeeModule,
     WorkScheduleModule,
     AttendanceModule,
+    LeaveRequestModule,
   ],
   providers: [
     {

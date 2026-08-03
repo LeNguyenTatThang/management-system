@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLeave } from '../../contexts/LeaveContext';
 import { useStaff } from '../../contexts/StaffContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Search, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { FileText, Search, CheckCircle, XCircle, Plus, Eye, Edit2 } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import DatePicker from '../../components/ui/DatePicker';
 import TimePicker from '../../components/ui/TimePicker';
@@ -22,14 +23,15 @@ function formatDateTime(dateStr, timeStr) {
 }
 
 export default function LeaveRequests() {
-  const { requests, createRequest, approveRequest, rejectRequest } = useLeave();
+  const navigate = useNavigate();
+  const { requests, loading, error, fetchRequests, createRequest, approveRequest, rejectRequest } = useLeave();
   const { staffList } = useStaff();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
 
-  const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+  const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
     startDate: '',
     startTime: '',
@@ -40,32 +42,31 @@ export default function LeaveRequests() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const isManager = user?.role === 'Quản lý';
-
   const currentEmployee = useMemo(() => {
     if (!user) return null;
     return staffList.find(s => s.email === user.email) || null;
   }, [user, staffList]);
 
-  const employeeInfo = useMemo(() => {
-    if (currentEmployee) return currentEmployee;
-    if (user) return { id: user.id, name: user.name, role: user.role };
-    return null;
-  }, [currentEmployee, user]);
+  const userEmployeeId = currentEmployee?.id || user?.id;
 
-  const userEmployeeId = employeeInfo?.id;
-
-  const displayRequests = useMemo(() => {
-    let list = isManager ? [...requests] : requests.filter(r => r.employeeId === userEmployeeId);
+  const filteredRequests = useMemo(() => {
+    let list = requests;
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      list = list.filter(r => r.employeeName?.toLowerCase().includes(q) || r.reason?.toLowerCase().includes(q));
+      list = list.filter(r =>
+        r.employeeName?.toLowerCase().includes(q) ||
+        r.reason?.toLowerCase().includes(q)
+      );
     }
     if (filterStatus) {
       list = list.filter(r => r.status === filterStatus);
     }
-    return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [requests, isManager, userEmployeeId, searchTerm, filterStatus]);
+    return list;
+  }, [requests, searchTerm, filterStatus]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const handleChange = (key) => (value) => {
     setForm(p => ({ ...p, [key]: value }));
@@ -98,13 +99,9 @@ export default function LeaveRequests() {
 
   const handleSubmit = async () => {
     if (!validate()) return;
-    if (!employeeInfo) { toast.error('Không tìm thấy thông tin nhân viên'); return; }
     setSubmitting(true);
     try {
-      createRequest({
-        employeeId: employeeInfo.id,
-        employeeName: employeeInfo.name,
-        employeeRole: employeeInfo.role,
+      await createRequest({
         startDate: form.startDate,
         startTime: form.startTime,
         endDate: form.endDate,
@@ -115,29 +112,50 @@ export default function LeaveRequests() {
       setShowModal(false);
       setForm({ startDate: '', startTime: '', endDate: '', endTime: '', reason: '' });
       setErrors({});
-    } catch {
-      toast.error('Có lỗi xảy ra');
+    } catch (e) {
+      toast.error(e.message || 'Có lỗi xảy ra');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleApprove = (id) => {
-    approveRequest(id);
-    toast.success('Đã duyệt đơn xin nghỉ');
+  const handleApprove = async (id) => {
+    try {
+      await approveRequest(id);
+      toast.success('Đã duyệt đơn xin nghỉ');
+    } catch (e) {
+      toast.error(e.message || 'Không thể duyệt đơn');
+    }
   };
 
-  const handleReject = (id) => {
-    rejectRequest(id);
-    toast.success('Đã từ chối đơn xin nghỉ');
+  const handleReject = async (id) => {
+    try {
+      await rejectRequest(id);
+      toast.success('Đã từ chối đơn xin nghỉ');
+    } catch (e) {
+      toast.error(e.message || 'Không thể từ chối đơn');
+    }
   };
 
   const openModal = () => {
-    if (!employeeInfo) { toast.error('Không tìm thấy thông tin nhân viên'); return; }
     setForm({ startDate: '', startTime: '', endDate: '', endTime: '', reason: '' });
     setErrors({});
     setShowModal(true);
   };
+
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="flex flex-col items-center justify-center py-12">
+          <XCircle size={48} className="text-danger mb-4" />
+          <p className="text-danger font-semibold">{error}</p>
+          <button className="btn btn-primary mt-4" onClick={() => fetchRequests()}>
+            Thử lại
+          </button>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
@@ -147,15 +165,17 @@ export default function LeaveRequests() {
             <h2 className="text-xl font-bold">Xin nghỉ phép</h2>
             <p className="text-muted text-sm">Quản lý đơn xin nghỉ phép của nhân viên</p>
           </div>
-          <button className="btn btn-primary flex items-center gap-2 h-40px whitespace-nowrap" onClick={openModal}>
-            <Plus size={18} /> Tạo đơn xin nghỉ
-          </button>
+          {hasPermission('hr.leave.create') && (
+            <button className="btn btn-primary flex items-center gap-2 h-40px whitespace-nowrap" onClick={openModal}>
+              <Plus size={18} /> Tạo đơn xin nghỉ
+            </button>
+          )}
         </div>
 
         <div className="card p-3 min-w-0 flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-0 min-w-200px">
             <Search size={18} className="text-muted absolute left-12px absolute-center-y" />
-            <input type="text" placeholder={isManager ? "Tìm nhân viên hoặc lý do..." : "Tìm lý do..."} className="w-full pl-10 h-36px"
+            <input type="text" placeholder="Tìm nhân viên hoặc lý do..." className="w-full pl-10 h-36px"
               value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
           <select className="h-36px w-auto text-sm" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
@@ -172,7 +192,7 @@ export default function LeaveRequests() {
               <thead>
                 <tr>
                   <th className="w-12 text-center">STT</th>
-                  {isManager && <th>Nhân viên</th>}
+                  <th>Nhân viên</th>
                   <th>Từ ngày</th>
                   <th>Đến ngày</th>
                   <th>Lý do</th>
@@ -181,24 +201,26 @@ export default function LeaveRequests() {
                 </tr>
               </thead>
               <tbody>
-                {displayRequests.map((r, idx) => {
+                {loading ? (
+                  <tr><td colSpan={7} className="text-center text-muted py-8">Đang tải dữ liệu...</td></tr>
+                ) : filteredRequests.map((r, idx) => {
                   const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
+                  const isOwner = r.employeeId === userEmployeeId;
                   return (
-                    <tr key={r.id}>
+                    <tr key={r.id} className="cursor-pointer transition hover-bg-primary-light"
+                      onClick={() => navigate(`/leave-requests/${r.id}`)}>
                       <td className="text-center text-muted text-sm">{idx + 1}</td>
-                      {isManager && (
-                        <td>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-primary-light text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
-                              {r.employeeName?.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-semibold text-sm truncate">{r.employeeName}</div>
-                              <div className="text-xs text-muted">{r.employeeRole}</div>
-                            </div>
+                      <td>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-primary-light text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {r.employeeName?.charAt(0).toUpperCase()}
                           </div>
-                        </td>
-                      )}
+                          <div className="min-w-0">
+                            <div className="font-semibold text-sm truncate">{r.employeeName}</div>
+                            <div className="text-xs text-muted">{r.employeeRole}</div>
+                          </div>
+                        </div>
+                      </td>
                       <td className="whitespace-nowrap text-sm font-semibold">
                         {formatDateTime(r.startDate, r.startTime)}
                       </td>
@@ -208,30 +230,35 @@ export default function LeaveRequests() {
                       <td className="text-sm max-w-200px truncate" title={r.reason}>{r.reason}</td>
                       <td><span className={`badge ${cfg.badge}`}>{cfg.label}</span></td>
                       <td className="text-right">
-                        {r.status === 'pending' && isManager && r.employeeId !== userEmployeeId && (
-                          <div className="flex items-center justify-end gap-2">
-                            <button className="btn btn-sm inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-success-light text-success font-semibold text-xs cursor-pointer hover-bg-success transition"
-                              onClick={() => handleApprove(r.id)}>
-                              <CheckCircle size={14} /> Duyệt
+                        <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                          {r.status === 'pending' && hasPermission('hr.leave.approve') && !isOwner && (
+                            <>
+                              <button className="btn btn-sm inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-success-light text-success font-semibold text-xs cursor-pointer hover-bg-success transition"
+                                onClick={() => handleApprove(r.id)}>
+                                <CheckCircle size={14} /> Duyệt
+                              </button>
+                              <button className="btn btn-sm inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-danger-light text-danger font-semibold text-xs cursor-pointer hover-bg-danger transition"
+                                onClick={() => handleReject(r.id)}>
+                                <XCircle size={14} /> Từ chối
+                              </button>
+                            </>
+                          )}
+                          {r.status === 'pending' && isOwner && (
+                            <span className="text-xs text-muted">Đang chờ duyệt</span>
+                          )}
+                          {r.status !== 'pending' && (
+                            <button className="text-xs text-primary font-semibold hover:underline cursor-pointer flex items-center gap-1"
+                              onClick={() => navigate(`/leave-requests/${r.id}`)}>
+                              <Eye size={14} /> Chi tiết
                             </button>
-                            <button className="btn btn-sm inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-danger-light text-danger font-semibold text-xs cursor-pointer hover-bg-danger transition"
-                              onClick={() => handleReject(r.id)}>
-                              <XCircle size={14} /> Từ chối
-                            </button>
-                          </div>
-                        )}
-                        {r.status === 'pending' && (!isManager || r.employeeId === userEmployeeId) && (
-                          <span className="text-xs text-muted">Đang chờ duyệt</span>
-                        )}
-                        {r.status !== 'pending' && (
-                          <span className="text-xs text-muted">—</span>
-                        )}
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
-                {displayRequests.length === 0 && (
-                  <tr><td colSpan={isManager ? 7 : 6} className="text-center text-muted py-8">Chưa có đơn xin nghỉ phép nào</td></tr>
+                {!loading && filteredRequests.length === 0 && (
+                  <tr><td colSpan={7} className="text-center text-muted py-8">Chưa có đơn xin nghỉ phép nào</td></tr>
                 )}
               </tbody>
             </ResponsiveTable>

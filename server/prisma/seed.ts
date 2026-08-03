@@ -47,6 +47,7 @@ const permissionGroups = [
   { group: 'hr', module: 'employee', label: 'Nhân viên', permissions: ['read', 'create', 'update', 'delete'] },
   { group: 'hr', module: 'schedule', label: 'Lịch làm việc', permissions: ['read', 'create', 'update', 'delete'] },
   { group: 'hr', module: 'attendance', label: 'Chấm công', permissions: ['read', 'create', 'update'] },
+  { group: 'hr', module: 'leave', label: 'Xin nghỉ phép', permissions: ['read', 'create', 'update', 'approve', 'reject'] },
 ];
 
 // Permissions granted to the MANAGER role (seed development only)
