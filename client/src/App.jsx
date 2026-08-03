@@ -80,6 +80,11 @@ import TopIngredients from './pages/inventory/reports/TopIngredients';
 import LowStockReport from './pages/inventory/reports/LowStockReport';
 import StocktakeReport from './pages/inventory/reports/StocktakeReport';
 import IngredientReport from './pages/inventory/reports/IngredientReport';
+import TransferList from './pages/inventory/transfers/TransferList';
+import TransferCreate from './pages/inventory/transfers/TransferCreate';
+import TransferDetail from './pages/inventory/transfers/TransferDetail';
+import TransferEdit from './pages/inventory/transfers/TransferEdit';
+import { InventoryTransferProvider } from './contexts/InventoryTransferContext';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -150,6 +155,10 @@ function AppRoutes() {
         <Route path="inventory/reports/low-stock" element={<LowStockReport />} />
         <Route path="inventory/reports/stocktake" element={<StocktakeReport />} />
         <Route path="inventory/reports/ingredient/:ingredientId" element={<IngredientReport />} />
+        <Route path="inventory/transfers" element={<TransferList />} />
+        <Route path="inventory/transfers/create" element={<TransferCreate />} />
+        <Route path="inventory/transfers/:id" element={<TransferDetail />} />
+        <Route path="inventory/transfers/:id/edit" element={<TransferEdit />} />
         <Route path="schedules" element={<Schedules />} />
         <Route path="schedules/create" element={<ScheduleCreate />} />
         <Route path="schedules/:id" element={<ScheduleDetail />} />
@@ -187,9 +196,11 @@ function App() {
           <InventoryExportProvider>
           <InventoryAdjustmentProvider>
           <InventoryStocktakeProvider>
+          <InventoryTransferProvider>
           <StockLedgerProvider>
           <AppRoutes />
           </StockLedgerProvider>
+          </InventoryTransferProvider>
           </InventoryStocktakeProvider>
           </InventoryAdjustmentProvider>
           </InventoryExportProvider>

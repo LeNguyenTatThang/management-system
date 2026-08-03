@@ -43,10 +43,13 @@ export class InventoryReportsService {
       totalExportedQuantity,
       totalAdjustedIn,
       totalAdjustedOut,
+      totalTransferredIn,
+      totalTransferredOut,
       importCount,
       exportCount,
       adjustmentCount,
       stocktakeCount,
+      transferCount,
     ] = await Promise.all([
       this.prisma.ingredient.count({ where: { status: 'ACTIVE' } }),
       lowStockCountPromise,
@@ -69,6 +72,14 @@ export class InventoryReportsService {
         where: { type: 'ADJUSTMENT', direction: 'OUT', createdAt: dateFilter.createdAt },
         _sum: { quantity: true },
       }),
+      this.prisma.stockMovement.aggregate({
+        where: { type: 'TRANSFER', direction: 'IN', createdAt: dateFilter.createdAt },
+        _sum: { quantity: true },
+      }),
+      this.prisma.stockMovement.aggregate({
+        where: { type: 'TRANSFER', direction: 'OUT', createdAt: dateFilter.createdAt },
+        _sum: { quantity: true },
+      }),
       this.prisma.inventoryImport.count({
         where: { createdAt: dateFilter.createdAt as any },
       }),
@@ -79,6 +90,9 @@ export class InventoryReportsService {
         where: { createdAt: dateFilter.createdAt as any },
       }),
       this.prisma.inventoryStocktake.count({
+        where: { createdAt: dateFilter.createdAt as any },
+      }),
+      this.prisma.inventoryTransfer.count({
         where: { createdAt: dateFilter.createdAt as any },
       }),
     ]);
@@ -93,10 +107,14 @@ export class InventoryReportsService {
       totalAdjustedQuantity:
         Number(totalAdjustedIn._sum.quantity ?? 0) +
         Number(totalAdjustedOut._sum.quantity ?? 0),
+      totalTransferredQuantity:
+        Number(totalTransferredIn._sum.quantity ?? 0) +
+        Number(totalTransferredOut._sum.quantity ?? 0),
       importCount,
       exportCount,
       adjustmentCount,
       stocktakeCount,
+      transferCount,
     };
   }
 
@@ -347,7 +365,7 @@ export class InventoryReportsService {
       createdAt: dateFilter.createdAt,
     };
 
-    const [movements, importCount, exportCount, adjustmentCount, stocktakeCount] =
+    const [movements, importCount, exportCount, adjustmentCount, stocktakeCount, transferCount] =
       await Promise.all([
         this.prisma.stockMovement.findMany({
           where: movementWhere,
@@ -368,6 +386,9 @@ export class InventoryReportsService {
         }),
         this.prisma.stockMovement.count({
           where: { ...movementWhere, referenceType: 'INVENTORY_STOCKTAKE' },
+        }),
+        this.prisma.stockMovement.count({
+          where: { ...movementWhere, type: 'TRANSFER' },
         }),
       ]);
 
@@ -392,6 +413,9 @@ export class InventoryReportsService {
         .reduce((s, m) => s + Number(m.quantity), 0),
       totalStocktake: movements
         .filter((m) => m.referenceType === 'INVENTORY_STOCKTAKE')
+        .reduce((s, m) => s + Number(m.quantity), 0),
+      totalTransferred: movements
+        .filter((m) => m.type === 'TRANSFER')
         .reduce((s, m) => s + Number(m.quantity), 0),
       movementCount: movements.length,
       importCount,

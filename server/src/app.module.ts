@@ -20,6 +20,7 @@ import { InventoryAdjustmentModule } from './modules/inventory-adjustment/invent
 import { StockLedgerModule } from './modules/stock-ledger/stock-ledger.module';
 import { InventoryStocktakeModule } from './modules/inventory-stocktake/inventory-stocktake.module';
 import { InventoryReportsModule } from './modules/inventory-reports/inventory-reports.module';
+import { InventoryTransferModule } from './modules/inventory-transfer/inventory-transfer.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { InventoryReportsModule } from './modules/inventory-reports/inventory-re
     StockLedgerModule,
     InventoryStocktakeModule,
     InventoryReportsModule,
+    InventoryTransferModule,
   ],
   providers: [
     {

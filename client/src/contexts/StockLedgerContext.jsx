@@ -11,6 +11,7 @@ export const MOVEMENT_TYPES = [
   { value: 'IMPORT', label: 'Nhập kho' },
   { value: 'EXPORT', label: 'Xuất kho' },
   { value: 'ADJUSTMENT', label: 'Điều chỉnh' },
+  { value: 'TRANSFER', label: 'Chuyển kho' },
 ];
 
 export const MOVEMENT_TYPE_LABELS = {};
@@ -32,6 +33,7 @@ export const REFERENCE_TYPES = [
   { value: 'INVENTORY_IMPORT', label: 'Nhập kho' },
   { value: 'INVENTORY_EXPORT', label: 'Xuất kho' },
   { value: 'INVENTORY_ADJUSTMENT', label: 'Điều chỉnh kho' },
+  { value: 'INVENTORY_TRANSFER', label: 'Chuyển kho' },
 ];
 
 export const REFERENCE_TYPE_LABELS = {};
