@@ -1,52 +1,146 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-
-const STORAGE_KEY = 'dezlab_products';
-
-const initialProducts = [
-  { id: 'CF001', name: 'Cà phê sữa', category: 'Cà phê', price: 25000, cost: 7640, profit: 17360, image: 'https://coffee.alexflipnote.dev/random?1', description: 'Cà phê sữa truyền thống', status: 'Đang bán', tags: ['Khay', 'Ống hút ngắn', 'Thìa ngắn'], size: '360ml', fc: '30.6%' },
-  { id: 'CF002', name: 'Bạc xỉu', category: 'Cà phê', price: 30000, cost: 8500, profit: 21500, image: 'https://coffee.alexflipnote.dev/random?2', description: 'Bạc xỉu Sài Gòn', status: 'Đang bán', tags: ['Khay', 'Ống hút'], size: '360ml', fc: '28.3%' },
-  { id: 'TR001', name: 'Trà đào cam sả', category: 'Trà', price: 40000, cost: 12000, profit: 28000, image: 'https://coffee.alexflipnote.dev/random?3', description: 'Trà đào cam sả tươi mát', status: 'Đang bán', tags: ['Ống hút to'], size: '500ml', fc: '30.0%' },
-  { id: 'TS001', name: 'Trà sữa trân châu', category: 'Đá xay', price: 35000, cost: 10500, profit: 24500, image: 'https://coffee.alexflipnote.dev/random?4', description: 'Trà sữa trân châu đường đen', status: 'Ngừng bán', tags: ['Ống hút to', 'Trân châu'], size: '500ml', fc: '30.0%' },
-];
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : initialProducts;
-  } catch { return initialProducts; }
-}
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import {
+  getProducts,
+  getProduct,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from '../services/productService';
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from '../services/categoryService';
+import {
+  getSetups,
+  createSetup,
+  updateSetup,
+  deleteSetup,
+} from '../services/setupService';
 
 const MenuProductContext = createContext(null);
 
 export function MenuProductProvider({ children }) {
-  const [products, setProducts] = useState(loadData);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [setups, setSetups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const addProduct = useCallback(async (product) => {
-    const newProduct = { id: `CF${String(products.length + 1).padStart(3, '0')}`, ...product };
-    const updated = [...products, newProduct];
-    setProducts(updated);
-    saveData(updated);
-    return newProduct;
-  }, [products]);
+  const fetchProducts = useCallback(async (params) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getProducts(params);
+      setProducts(data);
+    } catch (e) {
+      setError(e.message || 'Không thể tải danh sách món');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const updateProduct = useCallback(async (id, data) => {
-    const updated = products.map(p => p.id === id ? { ...p, ...data } : p);
-    setProducts(updated);
-    saveData(updated);
-  }, [products]);
+  const fetchCategories = useCallback(async () => {
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } catch {}
+  }, []);
 
-  const deleteProduct = useCallback(async (id) => {
-    const updated = products.filter(p => p.id !== id);
-    setProducts(updated);
-    saveData(updated);
-  }, [products]);
+  const fetchSetups = useCallback(async () => {
+    try {
+      const data = await getSetups();
+      setSetups(data);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+    fetchSetups();
+  }, [fetchProducts, fetchCategories, fetchSetups]);
+
+  const getProductById = useCallback(async (id) => {
+    try {
+      return await getProduct(id);
+    } catch (e) {
+      return null;
+    }
+  }, []);
+
+  const addProduct = useCallback(async (data) => {
+    const created = await createProduct(data);
+    setProducts((prev) => [...prev, created]);
+    return created;
+  }, []);
+
+  const editProduct = useCallback(async (id, data) => {
+    const updated = await updateProduct(id, data);
+    setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    return updated;
+  }, []);
+
+  const removeProduct = useCallback(async (id) => {
+    await deleteProduct(id);
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const addCategory = useCallback(async (data) => {
+    const created = await createCategory(data);
+    setCategories((prev) => [...prev, created]);
+    return created;
+  }, []);
+
+  const editCategory = useCallback(async (id, data) => {
+    const updated = await updateCategory(id, data);
+    setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
+    return updated;
+  }, []);
+
+  const removeCategory = useCallback(async (id) => {
+    await deleteCategory(id);
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  const addSetup = useCallback(async (data) => {
+    const created = await createSetup(data);
+    setSetups((prev) => [...prev, created]);
+    return created;
+  }, []);
+
+  const editSetup = useCallback(async (id, data) => {
+    const updated = await updateSetup(id, data);
+    setSetups((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    return updated;
+  }, []);
+
+  const removeSetup = useCallback(async (id) => {
+    await deleteSetup(id);
+    setSetups((prev) => prev.filter((s) => s.id !== id));
+  }, []);
 
   return (
-    <MenuProductContext.Provider value={{ products, addProduct, updateProduct, deleteProduct }}>
+    <MenuProductContext.Provider
+      value={{
+        products,
+        categories,
+        setups,
+        loading,
+        error,
+        fetchProducts,
+        getProductById,
+        addProduct,
+        editProduct,
+        removeProduct,
+        addCategory,
+        editCategory,
+        removeCategory,
+        addSetup,
+        editSetup,
+        removeSetup,
+      }}
+    >
       {children}
     </MenuProductContext.Provider>
   );

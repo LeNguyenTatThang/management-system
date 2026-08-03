@@ -9,6 +9,9 @@ import { EmployeeModule } from './modules/employee/employee.module';
 import { WorkScheduleModule } from './modules/work-schedule/work-schedule.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { LeaveRequestModule } from './modules/leave-request/leave-request.module';
+import { CategoryModule } from './modules/category/category.module';
+import { SetupModule } from './modules/setup/setup.module';
+import { ProductModule } from './modules/product/product.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { LeaveRequestModule } from './modules/leave-request/leave-request.module
     WorkScheduleModule,
     AttendanceModule,
     LeaveRequestModule,
+    CategoryModule,
+    SetupModule,
+    ProductModule,
   ],
   providers: [
     {

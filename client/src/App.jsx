@@ -18,6 +18,7 @@ import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/dashboard/Dashboard';
 import MenuProducts from './pages/dishes/MenuProducts';
 import ProductCreate from './pages/dishes/ProductCreate';
+import ProductDetail from './pages/dishes/ProductDetail';
 import Recipes from './pages/recipes/Recipes';
 import RecipeComponentCreate from './pages/recipes/RecipeComponentCreate';
 import POS from './pages/pos/POS';
@@ -82,6 +83,8 @@ function AppRoutes() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<MenuProducts />} />
         <Route path="products/new" element={<ProductCreate />} />
+        <Route path="products/:id" element={<ProductDetail />} />
+        <Route path="products/:id/edit" element={<ProductCreate />} />
         <Route path="recipes" element={<Recipes />} />
         <Route path="recipes/new" element={<RecipeComponentCreate />} />
         <Route path="pos" element={<POS />} />
