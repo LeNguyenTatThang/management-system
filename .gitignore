@@ -30,3 +30,14 @@ dist-ssr
 
 AGENTS.md
 SKILL.md
+
+# Generated build artifacts
+*.tsbuildinfo
+
+# Prisma generated files (from tsx seed)
+server/prisma/seed.js
+server/prisma/seed.js.map
+server/prisma/seed.d.ts
+
+# Windows artifacts
+server/nul
