@@ -129,6 +129,23 @@ enum AdjustmentStatus {
   CANCELLED
 }
 
+enum StockMovementType {
+  IMPORT
+  EXPORT
+  ADJUSTMENT
+}
+
+enum StockMovementDirection {
+  IN
+  OUT
+}
+
+enum ReferenceType {
+  INVENTORY_IMPORT
+  INVENTORY_EXPORT
+  INVENTORY_ADJUSTMENT
+}
+
 enum OrderStatus {
   PENDING
   PROCESSING
@@ -227,6 +244,7 @@ model Employee {
   exportsExecuted   InventoryExport[]    @relation("ExportExecutedBy")
   adjustmentsCreated   InventoryAdjustment[] @relation("AdjustmentCreatedBy")
   adjustmentsConfirmed InventoryAdjustment[] @relation("AdjustmentConfirmedBy")
+  stockMovementsPerformed StockMovement[]    @relation("StockMovementPerformer")
 
   @@index([roleId])
   @@index([status])
@@ -403,6 +421,7 @@ model Ingredient {
   importItems          InventoryImportItem[]
   exportItems          InventoryExportItem[]
   adjustmentItems      InventoryAdjustmentItem[]
+  stockMovements       StockMovement[]
 
   @@index([unitId])
   @@index([supplierId])
@@ -425,6 +444,7 @@ model Unit {
   importItems         InventoryImportItem[]
   exportItems         InventoryExportItem[]
   adjustmentItems     InventoryAdjustmentItem[]
+  stockMovements      StockMovement[]
 
   @@map("units")
 }
@@ -616,6 +636,39 @@ model InventoryAdjustmentItem {
   @@index([adjustmentId])
   @@index([ingredientId])
   @@map("inventory_adjustment_items")
+}
+
+// ============================================================
+// BIẾN ĐỘNG KHO (Stock Ledger)
+// ============================================================
+
+model StockMovement {
+  id              Int                      @id @default(autoincrement())
+  ingredientId    Int
+  ingredient      Ingredient               @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  type            StockMovementType
+  direction       StockMovementDirection
+  quantity        Decimal                  @db.Decimal(12, 3)
+  stockBefore     Decimal                  @db.Decimal(12, 3)
+  stockAfter      Decimal                  @db.Decimal(12, 3)
+  unitId          Int
+  unit            Unit                     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  referenceType   ReferenceType
+  referenceId     Int
+  referenceCode   String?
+  note            String?
+  performedById   Int?
+  performedBy     Employee?                @relation("StockMovementPerformer", fields: [performedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime                 @default(now())
+
+  @@index([ingredientId])
+  @@index([unitId])
+  @@index([performedById])
+  @@index([referenceType, referenceId])
+  @@index([type])
+  @@index([direction])
+  @@index([createdAt])
+  @@map("stock_movements")
 }
 
 // ============================================================

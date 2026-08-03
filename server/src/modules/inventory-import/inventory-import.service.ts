@@ -102,7 +102,7 @@ export class InventoryImportService {
     });
   }
 
-  async updateStatus(id: number, status: ImportStatus) {
+  async updateStatus(id: number, status: ImportStatus, userId?: number) {
     const existing = await this.findOne(id);
 
     if (status === ImportStatus.CONFIRMED && existing.status !== ImportStatus.DRAFT) {
@@ -121,19 +121,49 @@ export class InventoryImportService {
     if (status === ImportStatus.RECEIVED) data.receivedAt = now;
     if (status === ImportStatus.CANCELLED) data.cancelledAt = now;
 
-    await this.prisma.inventoryImport.update({ where: { id }, data });
-
     if (status === ImportStatus.RECEIVED) {
-      for (const item of existing.items) {
-        await this.prisma.ingredient.update({
-          where: { id: item.ingredientId },
-          data: {
-            stock: { increment: item.quantity },
-          },
-        });
-      }
+      return this.prisma.$transaction(async (tx) => {
+        await tx.inventoryImport.update({ where: { id }, data });
+
+        for (const item of existing.items) {
+          const ingredient = await tx.ingredient.findUnique({
+            where: { id: item.ingredientId },
+          });
+          if (!ingredient) {
+            throw new NotFoundException(`Nguyên liệu #${item.ingredientId} không tồn tại`);
+          }
+
+          const stockBefore = Number(ingredient.stock);
+          const importQty = Number(item.quantity);
+          const stockAfter = stockBefore + importQty;
+
+          await tx.ingredient.update({
+            where: { id: item.ingredientId },
+            data: { stock: stockAfter },
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              ingredientId: item.ingredientId,
+              type: 'IMPORT',
+              direction: 'IN',
+              quantity: importQty,
+              stockBefore,
+              stockAfter,
+              unitId: item.unitId,
+              referenceType: 'INVENTORY_IMPORT',
+              referenceId: existing.id,
+              referenceCode: existing.code,
+              performedById: userId,
+            },
+          });
+        }
+
+        return this.findOne(id);
+      });
     }
 
+    await this.prisma.inventoryImport.update({ where: { id }, data });
     return this.findOne(id);
   }
 

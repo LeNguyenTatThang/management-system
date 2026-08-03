@@ -62,8 +62,11 @@ export class InventoryImportController {
 
   @Patch(':id/receive')
   @RequirePermission('inventory.import.update')
-  receive(@Param('id', ParseIntPipe) id: number) {
-    return this.importService.updateStatus(id, ImportStatus.RECEIVED);
+  receive(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.importService.updateStatus(id, ImportStatus.RECEIVED, user.id);
   }
 
   @Patch(':id/cancel')

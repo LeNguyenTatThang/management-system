@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useIngredient } from '../../contexts/IngredientContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { ArrowLeft, Save, Info } from 'lucide-react';
+import { useStockLedger, MOVEMENT_TYPE_LABELS, MOVEMENT_DIRECTION_LABELS } from '../../contexts/StockLedgerContext';
+import { ArrowLeft, Save, Info, ArrowUpDown, History } from 'lucide-react';
 import PageContainer from '../../components/layout/PageContainer';
 import FormSection from '../../components/ui/FormSection';
 import { toast } from 'react-hot-toast';
@@ -12,10 +13,12 @@ export default function IngredientDetail() {
   const navigate = useNavigate();
   const { getIngredientById, editIngredient, units, fetchUnits } = useIngredient();
   const { hasPermission } = useAuth();
+  const { fetchIngredientMovements } = useStockLedger();
 
   const [ingredient, setIngredient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [recentMovements, setRecentMovements] = useState([]);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -32,6 +35,14 @@ export default function IngredientDetail() {
   useEffect(() => {
     fetchUnits();
   }, [fetchUnits]);
+
+  useEffect(() => {
+    if (id) {
+      fetchIngredientMovements(id, { limit: 5 }).then((result) => {
+        if (result?.items) setRecentMovements(result.items);
+      });
+    }
+  }, [id, fetchIngredientMovements]);
 
   useEffect(() => {
     (async () => {
@@ -258,6 +269,64 @@ export default function IngredientDetail() {
                   {ingredient?.statusLabel}
                 </span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {recentMovements.length > 0 && (
+          <div className="card mt-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <History size={18} className="text-primary" />
+                <h3 className="font-bold text-base">LỊCH SỬ BIẾN ĐỘNG GẦN ĐÂY</h3>
+              </div>
+              <button
+                className="text-sm text-primary font-semibold hover:underline cursor-pointer"
+                onClick={() => navigate(`/inventory/stock-ledger?ingredientId=${id}`)}
+              >
+                Xem tất cả
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-xs font-semibold text-muted border-b border-soft">
+                    <th className="text-left p-3">Thời gian</th>
+                    <th className="text-left p-3">Loại</th>
+                    <th className="text-center p-3">Hướng</th>
+                    <th className="text-right p-3">Số lượng</th>
+                    <th className="text-right p-3">Tồn sau</th>
+                    <th className="text-left p-3">Phiếu</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentMovements.map((m) => (
+                    <tr
+                      key={m.id}
+                      className="border-b border-soft/50 cursor-pointer hover-bg-primary-light"
+                      onClick={() => navigate(`/inventory/stock-ledger/${m.id}`)}
+                    >
+                      <td className="p-3 text-sm">
+                        {new Date(m.createdAt).toLocaleDateString('vi-VN')} {new Date(m.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="p-3 text-sm">{MOVEMENT_TYPE_LABELS[m.type] || m.type}</td>
+                      <td className="p-3 text-center">
+                        <span
+                          className="badge text-xs"
+                          style={{
+                            backgroundColor: m.direction === 'IN' ? '#ecfdf5' : '#fef2f2',
+                            color: m.direction === 'IN' ? '#10b981' : '#ef4444',
+                          }}
+                        >
+                          {m.direction === 'IN' ? '+' : '-'}{Number(m.quantity).toLocaleString('vi-VN')}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm text-right font-semibold">{Number(m.stockAfter).toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-sm text-right">{m.referenceCode || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

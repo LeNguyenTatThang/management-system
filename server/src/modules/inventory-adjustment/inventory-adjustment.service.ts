@@ -222,18 +222,40 @@ export class InventoryAdjustmentService {
         }
 
         for (const item of existing.items) {
-          const qty = Number(item.quantity);
-          if (item.direction === 'INCREASE') {
-            await tx.ingredient.update({
-              where: { id: item.ingredientId },
-              data: { stock: { increment: qty } },
-            });
-          } else {
-            await tx.ingredient.update({
-              where: { id: item.ingredientId },
-              data: { stock: { decrement: qty } },
-            });
+          const ingredient = await tx.ingredient.findUnique({
+            where: { id: item.ingredientId },
+          });
+          if (!ingredient) {
+            throw new NotFoundException(
+              `Nguyên liệu #${item.ingredientId} không tồn tại`,
+            );
           }
+          const stockBefore = Number(ingredient.stock);
+          const adjustQty = Number(item.quantity);
+          const stockAfter = item.direction === 'INCREASE'
+            ? stockBefore + adjustQty
+            : stockBefore - adjustQty;
+
+          await tx.ingredient.update({
+            where: { id: item.ingredientId },
+            data: { stock: stockAfter },
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              ingredientId: item.ingredientId,
+              type: 'ADJUSTMENT',
+              direction: item.direction === 'INCREASE' ? 'IN' : 'OUT',
+              quantity: adjustQty,
+              stockBefore,
+              stockAfter,
+              unitId: item.unitId,
+              referenceType: 'INVENTORY_ADJUSTMENT',
+              referenceId: existing.id,
+              referenceCode: existing.code,
+              performedById: userId,
+            },
+          });
         }
 
         await tx.inventoryAdjustment.update({ where: { id }, data });

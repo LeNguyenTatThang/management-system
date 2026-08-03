@@ -228,12 +228,36 @@ export class InventoryExportService {
         }
 
         for (const item of existing.items) {
+          const ingredient = await tx.ingredient.findUnique({
+            where: { id: item.ingredientId },
+          });
+          if (!ingredient) {
+            throw new NotFoundException(
+              `Nguyên liệu #${item.ingredientId} không tồn tại`,
+            );
+          }
+          const stockBefore = Number(ingredient.stock);
+          const exportQty = Number(item.requestedQuantity);
+          const stockAfter = stockBefore - exportQty;
+
           await tx.ingredient.update({
             where: { id: item.ingredientId },
+            data: { stock: stockAfter },
+          });
+
+          await tx.stockMovement.create({
             data: {
-              stock: {
-                decrement: Number(item.requestedQuantity),
-              },
+              ingredientId: item.ingredientId,
+              type: 'EXPORT',
+              direction: 'OUT',
+              quantity: exportQty,
+              stockBefore,
+              stockAfter,
+              unitId: item.unitId,
+              referenceType: 'INVENTORY_EXPORT',
+              referenceId: existing.id,
+              referenceCode: existing.code,
+              performedById: userId,
             },
           });
         }

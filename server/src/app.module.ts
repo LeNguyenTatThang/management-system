@@ -17,6 +17,7 @@ import { RecipeModule } from './modules/recipe/recipe.module';
 import { InventoryImportModule } from './modules/inventory-import/inventory-import.module';
 import { InventoryExportModule } from './modules/inventory-export/inventory-export.module';
 import { InventoryAdjustmentModule } from './modules/inventory-adjustment/inventory-adjustment.module';
+import { StockLedgerModule } from './modules/stock-ledger/stock-ledger.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { InventoryAdjustmentModule } from './modules/inventory-adjustment/invent
     InventoryImportModule,
     InventoryExportModule,
     InventoryAdjustmentModule,
+    StockLedgerModule,
   ],
   providers: [
     {
